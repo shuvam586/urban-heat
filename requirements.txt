@@ -1,0 +1,7 @@
+earthengine-api==1.7.42
+pygam==0.12.0
+geopandas==1.2.0
+pandas==3.1.1
+pyarrow==26.0.1
+scikit-learn==1.9.1
+matplotlib==3.11.1

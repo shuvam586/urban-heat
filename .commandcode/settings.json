@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Shell(python --version)",
+      "Shell(python -c import ee,sys; print('earthengine-api', ee.__version__))",
+      "Shell(python -c \"import os; print('EE_PROJECT=', os.environ.get('EE_PROJECT'))\")",
+      "powershell",
+      "Shell(python -c \"import pathlib; p=pathlib.Path.home()/'.config'/'earthengine'/'credentials'; print(p, p.exists()); print(p.read_text()[:500] if p.exists() else '')\")",
+      "Shell(python -c \"import json,pathlib; d=json.loads((pathlib.Path.home()/'.config'/'earthengine'/'credentials').read_text()); print({k:v for k,v in d.items() if k!='refresh_token' and k!='client_secret'})\")",
+      "Shell(gcloud config get-value project 2>nul || echo no-gcloud)",
+      "Shell(python -c \"import ee; ee.Initialize(project='894515835405'); print('init ok', ee.Number(1).add(1).getInfo())\")",
+      "Shell(mkdir data outputs tests 2>nul & dir)",
+      "Shell(set:*)",
+      "Shell(python 00_smoke_test.py --city Hyderabad)",
+      "Shell(dir:*)"
+    ],
+    "deny": [],
+    "defaultMode": "default"
+  }
+}
