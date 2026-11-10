@@ -116,7 +116,8 @@ def main():
 - CV R²: full model {cv['r2_mean']:.3f} ± {cv['r2_std']:.3f}. NDVI + year explains most of the CV R-squared ({ndvi['r2_mean']:.3f}); built + year alone is only {built['r2_mean']:.3f}.
 - Total built effect: `s(built) + te(built, NDVI)` spans {total_min:.2f} to {total_max:.2f} K and is generally downward; {unsupported_words}
 - Built fraction is zero-inflated: {below01:.1%} of cells are below 0.1 and {s04:.1%} are above 0.4 ({s05:.1%} above 0.5); the high-built part of the curve is weakly supported.
-- H2 and H3 are weakly supported where data allow.
+- H2 (nonlinearity): the total effect declines roughly steadily with a mild flattening above about 0.4, not formally tested, and sparse above 0.4.
+- H2 (vegetation modification): not supported, because the NDVI p25, p50 and p75 curves have overlapping 95% bands over almost the whole range.
 
 ## Median lst_rel by class (K)
 | class | {years[0]} | {years[1]} | {years[2]} |
@@ -154,7 +155,7 @@ NDVI + year explains most of the CV R-squared ({ndvi['r2_mean']:.3f} vs {cv['r2_
 Built fraction is zero-inflated: {cv['n_cells_below_built_0.1']:,} cells ({below01:.1%}) are below 0.1, {n04:,} ({s04:.1%}) are above 0.4, and {n05:,} ({s05:.1%}) are above 0.5. The high-built part of the curve is weakly supported.
 
 ## Hypotheses
-H2 and H3 are weakly supported where data allow. H2 (a nonlinear built-up effect modified by vegetation) is not strongly identified here: the full model improves on NDVI + year by only about {cv['r2_mean'] - ndvi['r2_mean']:.3f} R², built + year alone is near zero, and high-built cells are sparse.
+H2 (nonlinearity): the total effect declines roughly steadily with a mild flattening above about 0.4, not formally tested, and sparse above 0.4. H2 (vegetation modification): not supported, because the NDVI p25, p50 and p75 curves have overlapping 95% bands over almost the whole range. The full model improves on NDVI + year by only about {cv['r2_mean'] - ndvi['r2_mean']:.3f} R², built + year alone is near zero, and high-built cells are sparse.
 
 ## Caveats
 - The outcome is satellite land surface temperature, not air temperature; heatwave claims are out of scope.
@@ -169,7 +170,7 @@ H2 and H3 are weakly supported where data allow. H2 (a nonlinear built-up effect
 ## Three sentences
 Done: I refitted the specified GAM on the same {cv['subsample_cells']:,}-cell subsample, replaced Fig 2 with the total built effect (`s(built) + te`) at NDVI p25/p50/p75 with model-based 95% bands, fixed the Fig 3 mask orientation, and added the three same-fold CV comparisons.
 Shows: The total built effect spans {total_min:.2f} to {total_max:.2f} K and is generally downward; NDVI + year gets CV R² {ndvi['r2_mean']:.3f}, built + year {built['r2_mean']:.3f}, and the full model {cv['r2_mean']:.3f}; built is zero-inflated ({below01:.1%} below 0.1, {s04:.1%} above 0.4), and class 23's year intervals overlap.
-Could be wrong: The curve is unsupported in sparse high-built bins, the GAM uses a {cv['subsample_cells']:,}-cell subsample and smoothing selected at the lower edge, the 95% band is conditional on that smoothing, H2 and H3 are weakly supported where data allow, and all results are associations, not causal effects.
+Could be wrong: The curve is unsupported in sparse high-built bins, the GAM uses a {cv['subsample_cells']:,}-cell subsample and smoothing selected at the lower edge, the 95% band is conditional on that smoothing, H2 is weakly supported where data allow, and all results are associations, not causal effects.
 """
 
     path = output_dir / "summary.md"

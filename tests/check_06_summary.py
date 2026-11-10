@@ -37,7 +37,6 @@ def main():
         "below 0.1",
         "above 0.4",
         "h2",
-        "h3",
         "weakly supported",
         "unsupported",
         "class 23",
@@ -70,7 +69,7 @@ def main():
     print(f"summary.md: {path}")
     print(
         "verified: total-effect Fig 2, model comparisons, zero-inflation, "
-        "H2/H3, sparse support, class 23, three sentences"
+        "H2, sparse support, class 23, three sentences"
     )
     print("OK")
 

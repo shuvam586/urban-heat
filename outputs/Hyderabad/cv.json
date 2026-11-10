@@ -85,7 +85,7 @@
   "built_total_min": -3.691778830731491,
   "built_total_max": 2.2698841581100986,
   "built_total_range": 5.9616629888415895,
-  "built_total_shape_words": "The total built effect is generally downward: from 1.7-2.3 K at built 0.00, through zero near built 0.14, to -3.5--2.4 K at built 0.50; the three NDVI lines are close at low built and diverge at high built, with the highest-NDVI line the most negative. A shallow local rise appears near built 0.4 in the lowest-NDVI line.",
+  "built_total_shape_words": "The total built effect is generally downward: from 1.7-2.3 K at built 0.00, through zero near built 0.14, to -3.5--2.4 K at built 0.50; the three NDVI lines are close at low built and diverge at high built, with the highest-NDVI line the most negative.",
   "built_unsupported_words": "The curve is unsupported where cells are sparse: 7,348 cells (2.94%) are above built 0.4 and 2,387 (0.96%) above 0.5.",
   "n_cells_below_built_0.1": 219529,
   "share_below_built_0.1": 0.8795831446853352,

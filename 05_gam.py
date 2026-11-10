@@ -208,8 +208,7 @@ def main():
         f"{crossing_text}, to {end_min:.1f}-{end_max:.1f} K at "
         f"built {q99:.2f}; the three NDVI lines are close at low built "
         "and diverge at high built, with the highest-NDVI line the most "
-        "negative. A shallow local rise appears near built 0.4 in the "
-        "lowest-NDVI line."
+        "negative."
     )
 
     n_above_04 = int((panel["built"] > 0.4).sum())
@@ -256,7 +255,7 @@ def main():
     ax.set_xlabel("Built-up fraction")
     ax.set_ylabel("Total built effect (K)")
     ax.set_title(
-        "Hyderabad: total built effect (s(built) + te(built, NDVI))\n"
+        f"{city}: total built effect (s(built) + te(built, NDVI))\n"
         "NDVI p25/p50/p75 within built bins; year 2022; shaded = 95% band"
     )
     ax.legend(loc="best")
@@ -305,7 +304,7 @@ def main():
     ax.set_xlabel("Built-up fraction")
     ax.set_ylabel("NDVI")
     ax.set_title(
-        "Hyderabad: te(built, ndvi) surface\n"
+        f"{city}: te(built, ndvi) surface\n"
         f"white = fewer than {FIG3_MIN_COUNT} cells"
     )
     fig.tight_layout()

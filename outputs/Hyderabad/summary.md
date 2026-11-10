@@ -5,7 +5,8 @@
 - CV R²: full model 0.582 ± 0.018. NDVI + year explains most of the CV R-squared (0.489); built + year alone is only 0.009.
 - Total built effect: `s(built) + te(built, NDVI)` spans -3.69 to 2.27 K and is generally downward; The curve is unsupported where cells are sparse: 7,348 cells (2.94%) are above built 0.4 and 2,387 (0.96%) above 0.5.
 - Built fraction is zero-inflated: 88.0% of cells are below 0.1 and 2.9% are above 0.4 (1.0% above 0.5); the high-built part of the curve is weakly supported.
-- H2 and H3 are weakly supported where data allow.
+- H2 (nonlinearity): the total effect declines roughly steadily with a mild flattening above about 0.4, not formally tested, and sparse above 0.4.
+- H2 (vegetation modification): not supported, because the NDVI p25, p50 and p75 curves have overlapping 95% bands over almost the whole range.
 
 ## Median lst_rel by class (K)
 | class | 2022 | 2023 | 2025 |
@@ -23,7 +24,7 @@
 The 95% bootstrap intervals overlap for all year pairs, so they do not separate the class 23 medians.
 
 ## Total built effect (Fig 2)
-The total built effect is generally downward: from 1.7-2.3 K at built 0.00, through zero near built 0.14, to -3.5--2.4 K at built 0.50; the three NDVI lines are close at low built and diverge at high built, with the highest-NDVI line the most negative. A shallow local rise appears near built 0.4 in the lowest-NDVI line.
+The total built effect is generally downward: from 1.7-2.3 K at built 0.00, through zero near built 0.14, to -3.5--2.4 K at built 0.50; the three NDVI lines are close at low built and diverge at high built, with the highest-NDVI line the most negative.
 
 The fitted total effect ranges from -3.69 to 2.27 K over the 1st–99th percentile of built (0.00–0.50). The plot uses 20 built bins, NDVI at its 25th/50th/75th percentile within each bin, year 2022, and a rug of observed built values.
 
@@ -51,7 +52,7 @@ NDVI + year explains most of the CV R-squared (0.489 vs 0.582 for the full model
 Built fraction is zero-inflated: 219,529 cells (88.0%) are below 0.1, 7,348 (2.9%) are above 0.4, and 2,387 (1.0%) are above 0.5. The high-built part of the curve is weakly supported.
 
 ## Hypotheses
-H2 and H3 are weakly supported where data allow. H2 (a nonlinear built-up effect modified by vegetation) is not strongly identified here: the full model improves on NDVI + year by only about 0.093 R², built + year alone is near zero, and high-built cells are sparse.
+H2 (nonlinearity): the total effect declines roughly steadily with a mild flattening above about 0.4, not formally tested, and sparse above 0.4. H2 (vegetation modification): not supported, because the NDVI p25, p50 and p75 curves have overlapping 95% bands over almost the whole range. The full model improves on NDVI + year by only about 0.093 R², built + year alone is near zero, and high-built cells are sparse.
 
 ## Caveats
 - The outcome is satellite land surface temperature, not air temperature; heatwave claims are out of scope.
@@ -66,4 +67,4 @@ H2 and H3 are weakly supported where data allow. H2 (a nonlinear built-up effect
 ## Three sentences
 Done: I refitted the specified GAM on the same 10,000-cell subsample, replaced Fig 2 with the total built effect (`s(built) + te`) at NDVI p25/p50/p75 with model-based 95% bands, fixed the Fig 3 mask orientation, and added the three same-fold CV comparisons.
 Shows: The total built effect spans -3.69 to 2.27 K and is generally downward; NDVI + year gets CV R² 0.489, built + year 0.009, and the full model 0.582; built is zero-inflated (88.0% below 0.1, 2.9% above 0.4), and class 23's year intervals overlap.
-Could be wrong: The curve is unsupported in sparse high-built bins, the GAM uses a 10,000-cell subsample and smoothing selected at the lower edge, the 95% band is conditional on that smoothing, H2 and H3 are weakly supported where data allow, and all results are associations, not causal effects.
+Could be wrong: The curve is unsupported in sparse high-built bins, the GAM uses a 10,000-cell subsample and smoothing selected at the lower edge, the 95% band is conditional on that smoothing, H2 is weakly supported where data allow, and all results are associations, not causal effects.

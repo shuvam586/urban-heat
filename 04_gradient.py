@@ -149,7 +149,7 @@ def main():
             ax.set_ylabel("LST relative to rural median (K)")
             ax.legend(loc="lower left", fontsize=8)
 
-    fig.suptitle("Hyderabad: LST relative to rural median by ladder class")
+    fig.suptitle(f"{city}: LST relative to rural median by ladder class")
     fig.tight_layout()
     fig.savefig(output_dir / "fig1_gradient.png", dpi=150)
 
