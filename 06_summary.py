@@ -168,9 +168,9 @@ H2 (nonlinearity): the total effect declines roughly steadily with a mild flatte
 - Results are associations only, not causal effects.
 
 ## Three sentences
-Done: I refitted the specified GAM on the same {cv['subsample_cells']:,}-cell subsample, replaced Fig 2 with the total built effect (`s(built) + te`) at NDVI p25/p50/p75 with model-based 95% bands, fixed the Fig 3 mask orientation, and added the three same-fold CV comparisons.
-Shows: The total built effect spans {total_min:.2f} to {total_max:.2f} K and is generally downward; NDVI + year gets CV R² {ndvi['r2_mean']:.3f}, built + year {built['r2_mean']:.3f}, and the full model {cv['r2_mean']:.3f}; built is zero-inflated ({below01:.1%} below 0.1, {s04:.1%} above 0.4), and class 23's year intervals overlap.
-Could be wrong: The curve is unsupported in sparse high-built bins, the GAM uses a {cv['subsample_cells']:,}-cell subsample and smoothing selected at the lower edge, the 95% band is conditional on that smoothing, H2 is weakly supported where data allow, and all results are associations, not causal effects.
+Done: I ran steps 01 to 06 for {city} for {years[0]}, {years[1]} and {years[2]}, fitting the GAM on a random subsample of {cv['subsample_cells']:,} cells ({cv['subsample_rows']:,} rows) with 5 km spatial-block cross-validation.
+Shows: Centre-class median `lst_rel` is {medians.loc['centre', years[0]]:.2f}, {medians.loc['centre', years[1]]:.2f} and {medians.loc['centre', years[2]]:.2f} K in {years[0]}, {years[1]} and {years[2]}; CV R² is {ndvi['r2_mean']:.3f} for NDVI + year, {built['r2_mean']:.3f} for built + year and {cv['r2_mean']:.3f} for the full model; H2 nonlinearity: the total effect declines roughly steadily with a mild flattening above about 0.4, not formally tested, and sparse above 0.4; H2 vegetation modification: not supported, because the NDVI p25, p50 and p75 curves have overlapping 95% bands over almost the whole range.
+Could be wrong: The curve is unsupported in sparse high-built bins, the GAM uses a {cv['subsample_cells']:,}-cell subsample and smoothing selected at the lower edge, the 95% band is conditional on that smoothing, and all results are associations, not causal effects.
 """
 
     path = output_dir / "summary.md"

@@ -65,6 +65,6 @@ H2 (nonlinearity): the total effect declines roughly steadily with a mild flatte
 - Results are associations only, not causal effects.
 
 ## Three sentences
-Done: I refitted the specified GAM on the same 10,000-cell subsample, replaced Fig 2 with the total built effect (`s(built) + te`) at NDVI p25/p50/p75 with model-based 95% bands, fixed the Fig 3 mask orientation, and added the three same-fold CV comparisons.
-Shows: The total built effect spans -3.69 to 2.27 K and is generally downward; NDVI + year gets CV R² 0.489, built + year 0.009, and the full model 0.582; built is zero-inflated (88.0% below 0.1, 2.9% above 0.4), and class 23's year intervals overlap.
-Could be wrong: The curve is unsupported in sparse high-built bins, the GAM uses a 10,000-cell subsample and smoothing selected at the lower edge, the 95% band is conditional on that smoothing, H2 is weakly supported where data allow, and all results are associations, not causal effects.
+Done: I ran steps 01 to 06 for Hyderabad for 2022, 2023 and 2025, fitting the GAM on a random subsample of 10,000 cells (29,076 rows) with 5 km spatial-block cross-validation.
+Shows: Centre-class median `lst_rel` is -2.21, -2.15 and -2.31 K in 2022, 2023 and 2025; CV R² is 0.489 for NDVI + year, 0.009 for built + year and 0.582 for the full model; H2 nonlinearity: the total effect declines roughly steadily with a mild flattening above about 0.4, not formally tested, and sparse above 0.4; H2 vegetation modification: not supported, because the NDVI p25, p50 and p75 curves have overlapping 95% bands over almost the whole range.
+Could be wrong: The curve is unsupported in sparse high-built bins, the GAM uses a 10,000-cell subsample and smoothing selected at the lower edge, the 95% band is conditional on that smoothing, and all results are associations, not causal effects.
