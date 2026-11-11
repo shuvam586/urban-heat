@@ -68,6 +68,19 @@ def fig2_curves(panel, selected_lam):
             ndvi_quantiles[i] = np.quantile(values, [0.25, 0.5, 0.75])
             valid_bins[i] = True
 
+    unique_built = panel.drop_duplicates("grid_id")["built"]
+    bin_cell_counts = np.zeros(FIG2_BINS, dtype=int)
+    for i in range(FIG2_BINS):
+        if i < FIG2_BINS - 1:
+            in_bin_cells = (unique_built >= eval_edges[i]) & (
+                unique_built < eval_edges[i + 1]
+            )
+        else:
+            in_bin_cells = (unique_built >= eval_edges[i]) & (
+                unique_built <= eval_edges[i + 1]
+            )
+        bin_cell_counts[i] = int(in_bin_cells.sum())
+
     eval_rows = []
     for i in range(FIG2_BINS):
         if not valid_bins[i]:
@@ -109,6 +122,8 @@ def fig2_curves(panel, selected_lam):
         float(q01),
         float(q99),
         n_valid,
+        bin_cell_counts[valid_bins],
+        int(len(unique_built)),
     )
 
 
@@ -136,7 +151,9 @@ def zero_crossing_text(p50, centers):
     return "does not cross zero inside the plotted range"
 
 
-def vegetation_result(lower_lines, upper_lines, n_valid):
+def vegetation_result(
+    lower_lines, upper_lines, n_valid, bin_cell_counts, total_cells
+):
     separated = []
     for i in range(n_valid):
         if not intervals_overlap(
@@ -147,23 +164,39 @@ def vegetation_result(lower_lines, upper_lines, n_valid):
         ):
             separated.append(i)
     n_sep = len(separated)
+    sep_cells = int(bin_cell_counts[separated].sum()) if separated else 0
+    sep_share = sep_cells / total_cells if total_cells else 0.0
     rule = (
-        "Rule: a bin separates if the NDVI p25 and p75 95% bands do not "
-        "overlap; 'not supported' means at most 2 of 20 bins separate."
+        "Cutoffs are conventions: 'not supported' means at most 2 of 20 "
+        "built bins separate; 'weak' means the separating bins together "
+        "hold <5% of unique non-water cells; otherwise the result is "
+        "'supported'. A bin separates if the NDVI p25 and p75 95% bands "
+        "do not overlap."
     )
     if n_sep <= 2:
         text = (
             f"not supported: only {n_sep} of {n_valid} built bins have "
-            "non-overlapping NDVI p25/p75 95% bands"
+            "non-overlapping NDVI p25/p75 95% bands; those bins hold "
+            f"{sep_share:.1%} of unique non-water cells"
         )
     else:
         first = separated[0] + 1
         last = separated[-1] + 1
-        text = (
-            f"supported in bins {first} to {last}: {n_sep} of {n_valid} "
-            "built bins have non-overlapping NDVI p25/p75 95% bands"
-        )
-    return text, rule, n_sep, separated
+        if sep_share < 0.05:
+            text = (
+                f"weak, limited to bins {first} to {last}: {n_sep} of "
+                f"{n_valid} built bins have non-overlapping NDVI p25/p75 "
+                "95% bands, but those bins hold only "
+                f"{sep_share:.1%} of unique non-water cells"
+            )
+        else:
+            text = (
+                f"supported in bins {first} to {last}: {n_sep} of "
+                f"{n_valid} built bins have non-overlapping NDVI p25/p75 "
+                "95% bands, and those bins hold "
+                f"{sep_share:.1%} of unique non-water cells"
+            )
+    return text, rule, n_sep, separated, sep_share
 
 
 def main():
@@ -270,6 +303,8 @@ def main():
         curve_x0,
         curve_x1,
         n_valid,
+        bin_cell_counts,
+        total_cells,
     ) = fig2_curves(panel, cv["selected_lam"])
 
     start_min = float(np.min(total_lines[0]))
@@ -285,8 +320,8 @@ def main():
         total_max,
     )
     crossing = zero_crossing_text(total_lines[:, 1], centers)
-    veg_text, veg_rule, n_sep, separated_bins = vegetation_result(
-        lower_lines, upper_lines, n_valid
+    veg_text, veg_rule, n_sep, separated_bins, veg_share = vegetation_result(
+        lower_lines, upper_lines, n_valid, bin_cell_counts, total_cells
     )
 
     direction_rule = (
@@ -297,8 +332,9 @@ def main():
         "changes sign inside the plotted range."
     )
     curve_no_period = (
-        f"{direction} from {start_min:.1f} to {start_max:.1f} K at built "
-        f"{x0:.2f}, and {end_min:.1f} to {end_max:.1f} K at built {x1:.2f}; "
+        f"{direction}; across the NDVI lines, "
+        f"{start_min:+.1f} to {start_max:+.1f} K at built {x0:.2f} and "
+        f"{end_min:+.1f} to {end_max:+.1f} K at built {x1:.2f}; "
         f"it {crossing}"
     )
     curve_core = f"{curve_no_period}."
