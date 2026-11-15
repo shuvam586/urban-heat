@@ -2,9 +2,11 @@
 
 | City | Steps 01-05 | Step 06 summary | Step 06 check | Notes |
 |---|---|---|---|---|
-| Hyderabad | pass | written | pass | Approved. Summary regenerated from the city's own results; numbers and conclusions unchanged. |
-| Kolkata | pass (first run) | written | pass | Steps 01-05 accepted as a first run. Summary regenerated from Kolkata results: class 23 counts 4,090/3,782/3,605, total built effect rises, vegetation modification weak and limited to bins 17-20. Not yet formally approved. |
-| Chennai | pass | written | pass | Unreviewed first run. 2022 is very thin: 3,632 panel rows, 91.6% of cells with `n_obs < 3`, only 21 centre cells. Single Landsat path 142/row 51. Water is 50.4% of the grid. Built + year CV R2 is -0.041; full 0.487, NDVI + year 0.447. Do not treat as a stable city result without review. The 2022 `n_obs < 3` loss is caused by the `ST_QA <= 3 K` filter, not QA_PIXEL cloud masking. |
+| Hyderabad | pass | written | pass | Rerun under ST_QA_MAX_K = 5 (post-hoc decision applied to all cities). Panel rows 260,715; cell retention > 99.9% each year. Summary and figures regenerated cleanly. |
+| Kolkata | pass (first run) | written | pass | Steps 01-05 accepted as a first run (under ST_QA_MAX_K = 3). Pending rerun under ST_QA_MAX_K = 5. |
+| Chennai | pass | written | pass | Unreviewed first run (under ST_QA_MAX_K = 3). Pending rerun under ST_QA_MAX_K = 5. |
+
+Decision: ST_QA_MAX_K = 5 for ALL cities. It was chosen post-hoc after seeing a diagnostic in Chennai (the original 3 K default was an ungrounded user choice, not a Landsat specification). All cities are to be processed under 5 K without per-city tuning.
 
 Summary and check_06 are city-generic. No model, figure, setting, limit or numeric output changed. The summary wording was corrected to "the fitted total effect is non-monotonic"; check_06 was updated to accept that grammar. Only the Chennai summary text changed.
 
