@@ -331,8 +331,12 @@ def main():
         "sign of end - start; a zero crossing is reported when the p50 line "
         "changes sign inside the plotted range."
     )
+    if direction in ("non-monotonic", "roughly flat"):
+        direction_phrase = f"is {direction}"
+    else:
+        direction_phrase = direction
     curve_no_period = (
-        f"{direction}; across the NDVI lines, "
+        f"{direction_phrase}; across the NDVI lines, "
         f"{start_min:+.1f} to {start_max:+.1f} K at built {x0:.2f} and "
         f"{end_min:+.1f} to {end_max:+.1f} K at built {x1:.2f}; "
         f"it {crossing}"

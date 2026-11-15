@@ -92,7 +92,11 @@ def main():
             sys.exit(f"summary.md missing {label} cell count: {token}")
 
     direction = direction_from_cv(cv)
-    if f"the fitted total effect {direction}".lower() not in lower:
+    if direction in ("non-monotonic", "roughly flat"):
+        expected_phrase = f"the fitted total effect is {direction}"
+    else:
+        expected_phrase = f"the fitted total effect {direction}"
+    if expected_phrase.lower() not in lower:
         sys.exit(
             "summary.md curve direction does not match cv.json: "
             f"expected '{direction}'"
