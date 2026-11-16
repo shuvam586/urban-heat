@@ -55,4 +55,11 @@ Vegetation rule v3.1 (fixed-NDVI contrast + spatial-block bootstrap with a cover
 - All four cities with v3.1 results (Hyderabad, Kolkata, Chennai, Delhi) have fewer than 5% of bin-20 cells in the fixed NDVI range (Hyderabad 2.0%, Kolkata 0.0%, Chennai 0.3%, Delhi 0.5%). Hyderabad was not flagged in the earlier v3 report but is now covered by the same condition. The contrast is extrapolation in every city and is not a supported test of vegetation moderation.
 - Sign changed for Kolkata relative to v2 (-1.05 K) because fixed NDVI values differ from within-bin quantiles; this is the expected effect of the fix.
 
+Delhi diagnostic (report only):
+- Scenes (Earth Engine metadata WRS_PATH/WRS_ROW/CLOUD_COVER): 2022 = 35, 2023 = 30, 2025 = 36; paths 146/40, 146/41, 147/40 cover the circle (scenes per month Mar/Apr/May = 11/12/12, 12/8/10, 12/12/12).
+- Path coverage: 44,566 cells single-path (median n_obs 6.98–11.00) and 42,701 dual-path (median n_obs 13.00–20.45); n_obs < 3 share is 0.00% in every group and year; no cell is uncovered.
+- gradient.csv (committed): centre median lst_rel −0.30 / +0.14 / +1.01 K in 2022/2023/2025; class 22 median +2.93 / +1.47 / +1.39 K (all bootstrap intervals exclude zero).
+- Centre lst_rel change: 2022→2023 driven mainly by the rural reference (rural LST 313.90→309.74 K vs centre 313.60→309.88 K); 2023→2025 driven mainly by the centre itself (rural 309.74→311.04 K vs centre 309.88→312.06 K). Diagnostic only, not a causal claim.
+- Class 22: 869 cells in 61 distinct 5 km blocks; three largest blocks hold 15.2% of cells (max block 5.9%), so not driven by a few localities; per-year median lst_rel +2.93 / +1.47 / +1.39 K.
+
 Pending: Bengaluru has not been run (do not run it without approval). Delhi is complete (unreviewed first run). The five-city comparison table from the five summary.md files has not been assembled. PLAN.md line 23 still lists years "2019, 2022, 2025" while config.py and the runs use 2022, 2023, 2025; this inconsistency predates this work and was not changed.
