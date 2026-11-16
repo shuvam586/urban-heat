@@ -1,0 +1,149 @@
+{
+  "city": "Hyderabad",
+  "subsample_cells": 10000,
+  "subsample_rows": 29984,
+  "n_folds": 5,
+  "block_size_m": 5000,
+  "lam_grid": [
+    0.1,
+    1.0,
+    10.0,
+    100.0,
+    1000.0
+  ],
+  "n_bootstrap": 200,
+  "bootstrap_seed": 42,
+  "city_median_ndvi": 0.3513968226424025,
+  "coverage": [
+    {
+      "context": "rural",
+      "n_cells": 7032,
+      "n_blocks": 320,
+      "built_q05": 0.0,
+      "built_q099": 0.11443163615450203,
+      "eligible": true
+    },
+    {
+      "context": "suburban",
+      "n_cells": 1564,
+      "n_blocks": 208,
+      "built_q05": 0.0,
+      "built_q099": 0.2675040429371697,
+      "eligible": true
+    },
+    {
+      "context": "semi-dense",
+      "n_cells": 107,
+      "n_blocks": 39,
+      "built_q05": 0.0,
+      "built_q099": 0.3467945430172633,
+      "eligible": false
+    },
+    {
+      "context": "dense",
+      "n_cells": 152,
+      "n_blocks": 45,
+      "built_q05": 0.0,
+      "built_q099": 0.4867290409326316,
+      "eligible": false
+    },
+    {
+      "context": "centre",
+      "n_cells": 1145,
+      "n_blocks": 58,
+      "built_q05": 0.0,
+      "built_q099": 0.6183311413320828,
+      "eligible": true
+    }
+  ],
+  "context_results": [
+    {
+      "context": "rural",
+      "eligible": true,
+      "n_cells": 7032,
+      "n_blocks": 320,
+      "built_q01": 0.0,
+      "built_q099": 0.11443163615450203,
+      "median_ndvi": 0.3513968226424025,
+      "selected_lam": 0.1
+    },
+    {
+      "context": "suburban",
+      "eligible": true,
+      "n_cells": 1564,
+      "n_blocks": 208,
+      "built_q01": 0.0,
+      "built_q099": 0.2675040429371697,
+      "median_ndvi": 0.3513968226424025,
+      "selected_lam": 1.0
+    },
+    {
+      "context": "semi-dense",
+      "eligible": false,
+      "reason": "cells=107 blocks=39"
+    },
+    {
+      "context": "dense",
+      "eligible": false,
+      "reason": "cells=152 blocks=45"
+    },
+    {
+      "context": "centre",
+      "eligible": true,
+      "n_cells": 1145,
+      "n_blocks": 58,
+      "built_q01": 0.0,
+      "built_q099": 0.6183311413320828,
+      "median_ndvi": 0.3513968226424025,
+      "selected_lam": 0.1
+    }
+  ],
+  "part_b": {
+    "model_nonlinear": "s(built) + s(ndvi) + f(year)",
+    "model_linear": "built + s(ndvi) + f(year)",
+    "nl_selected_lam": 1.0,
+    "lin_selected_lam": 1.0,
+    "nl_fold_scores": [
+      0.620048290701535,
+      0.6100828323308127,
+      0.6591513476978504,
+      0.5858892060095928,
+      0.6411217190228382
+    ],
+    "lin_fold_scores": [
+      0.6197590442176621,
+      0.6089970823711583,
+      0.6587213908394021,
+      0.5844510438852877,
+      0.6419505371542884
+    ],
+    "fold_differences": [
+      0.00028924648387285146,
+      0.0010857499596543807,
+      0.00042995685844837706,
+      0.0014381621243051423,
+      -0.000828818131450193
+    ],
+    "mean_gain": 0.00048285945896611173,
+    "folds_favour_nonlinear": 4,
+    "negligible_gain": true,
+    "derivative_zero_crossings": [
+      {
+        "type": "max",
+        "built": 0.005997401801329938
+      },
+      {
+        "type": "min",
+        "built": 0.3438510366095831
+      },
+      {
+        "type": "max",
+        "built": 0.37483761258312115
+      },
+      {
+        "type": "min",
+        "built": 0.45880123780174026
+      }
+    ]
+  }
+}
