@@ -1,5 +1,6 @@
 import argparse
 import json
+import time
 from pathlib import Path
 
 import numpy as np
@@ -154,13 +155,20 @@ def zero_crossing_text(p50, centers):
     return "does not cross zero inside the plotted range"
 
 
-def vegetation_result_v2(panel, selected_lam):
-    """Evaluate vegetation moderation under convention v2.
+def vegetation_result_v3(panel, selected_lam, n_boot, boot_seed):
+    """Evaluate vegetation moderation under convention v3.
 
-    Computes:
-    1. Paired 5 km spatial-block GroupKFold CV R2 for additive vs full model.
-    2. Gap contrast between the lowest and highest built bins with >= VEG_MIN_BLOCKS.
+    Fixed NDVI contrast: the NDVI p25/p75 are computed city-wide over
+    non-water cells (mean NDVI per unique cell), so the same NDVI values
+    are used in every built bin, unlike v2 where within-bin quantiles made
+    the NDVI range differ between bins. Contrast = (gap at bin 20) minus
+    (gap at bin 1), where the gap is the total effect at NDVI p75 minus
+    the total effect at NDVI p25. Model-based SE/z come from the
+    coefficient covariance; a 5 km spatial-block bootstrap (blocks
+    resampled with replacement, full GAM refit with the selected
+    smoothing fixed, no new grid search) supplies the bootstrap CI.
     """
+    t0 = time.time()
     block_key = (
         np.floor(panel["x"] / config.BLOCK_SIZE_M).astype(int).astype(str)
         + "_"
@@ -173,44 +181,56 @@ def vegetation_result_v2(panel, selected_lam):
     q99 = float(np.quantile(panel["built"], 0.99))
     eval_edges = np.linspace(q01, q99, FIG2_BINS + 1)
     eval_centers = 0.5 * (eval_edges[:-1] + eval_edges[1:])
-    unique_cells_total = panel["grid_id"].nunique()
 
-    bin_stats = []
-    ndvi_quantiles = np.zeros((FIG2_BINS, 3))
-    valid_bins = np.zeros(FIG2_BINS, dtype=bool)
+    # Fixed NDVI values: city-wide quantiles of per-cell mean NDVI.
+    cells = panel.drop_duplicates("grid_id")[
+        ["grid_id", "built", "x", "y", "block_id"]
+    ].copy()
+    cell_ndvi = panel.groupby("grid_id")["ndvi"].mean().rename("ndvi_mean")
+    cells = cells.merge(cell_ndvi, on="grid_id")
+    p25 = float(np.quantile(cells["ndvi_mean"], 0.25))
+    p75 = float(np.quantile(cells["ndvi_mean"], 0.75))
 
-    for i in range(FIG2_BINS):
-        in_bin = (panel["built"] >= eval_edges[i]) & (
-            panel["built"] <= eval_edges[i + 1]
-            if i == FIG2_BINS - 1
-            else panel["built"] < eval_edges[i + 1]
+    def bin_mask(i):
+        if i < FIG2_BINS - 1:
+            return (cells["built"] >= eval_edges[i]) & (
+                cells["built"] < eval_edges[i + 1]
+            )
+        return (cells["built"] >= eval_edges[i]) & (
+            cells["built"] <= eval_edges[i + 1]
         )
-        sub_bin = panel[in_bin]
-        u_cells = sub_bin["grid_id"].nunique()
-        u_share = u_cells / unique_cells_total if unique_cells_total else 0.0
-        n_blocks = sub_bin["block_id"].nunique()
 
-        values = sub_bin["ndvi"]
-        if len(values) >= 5:
-            ndvi_quantiles[i] = np.quantile(values, [0.25, 0.5, 0.75])
-            valid_bins[i] = True
+    i_low, i_high = 0, FIG2_BINS - 1
+    for i, label in ((i_low, "bin 1"), (i_high, "bin 20")):
+        if int(bin_mask(i).sum()) == 0:
+            raise SystemExit(f"{label} has no cells")
+    bin_cells_low = cells[bin_mask(i_low)]
+    bin_cells_high = cells[bin_mask(i_high)]
+    n_cells_total = len(cells)
+    share_low_total = len(bin_cells_low) / n_cells_total
+    share_high_total = len(bin_cells_high) / n_cells_total
+    share_low_between = float(
+        (
+            (bin_cells_low["ndvi_mean"] >= p25)
+            & (bin_cells_low["ndvi_mean"] <= p75)
+        ).mean()
+    )
+    share_high_between = float(
+        (
+            (bin_cells_high["ndvi_mean"] >= p25)
+            & (bin_cells_high["ndvi_mean"] <= p75)
+        ).mean()
+    )
+    blocks_low = int(bin_cells_low["block_id"].nunique())
+    blocks_high = int(bin_cells_high["block_id"].nunique())
 
-        bin_stats.append(
-            {
-                "bin": i + 1,
-                "center": eval_centers[i],
-                "u_cells": u_cells,
-                "u_share": u_share,
-                "n_blocks": n_blocks,
-                "valid": valid_bins[i],
-            }
-        )
-    df_bins = pd.DataFrame(bin_stats)
-
+    # Subsample identical to the step 05 fit; fixed-lam GAM fit.
     cell_ids = panel["grid_id"].unique()
     rng = np.random.default_rng(SEED)
     if len(cell_ids) > SUBSAMPLE_CELLS:
-        sampled_cells = rng.choice(cell_ids, size=SUBSAMPLE_CELLS, replace=False)
+        sampled_cells = rng.choice(
+            cell_ids, size=SUBSAMPLE_CELLS, replace=False
+        )
         sub = panel[panel["grid_id"].isin(sampled_cells)].copy()
     else:
         sub = panel.copy()
@@ -248,75 +268,127 @@ def vegetation_result_v2(panel, selected_lam):
     mean_diff = float(np.mean(diffs))
     folds_favour = int(sum(d > 0 for d in diffs))
 
-    cand_bins = df_bins[
-        (df_bins["n_blocks"] >= config.VEG_MIN_BLOCKS) & df_bins["valid"]
-    ]
-    if len(cand_bins) < 2:
-        raise SystemExit("Fewer than 2 bins meet the minimum block threshold")
-    bin_low = cand_bins.iloc[0]
-    bin_high = cand_bins.iloc[-1]
-    i_low = int(bin_low["bin"] - 1)
-    i_high = int(bin_high["bin"] - 1)
-
-    eval_pts = [
-        [eval_centers[i_low], ndvi_quantiles[i_low, 0], 0.0],
-        [eval_centers[i_low], ndvi_quantiles[i_low, 2], 0.0],
-        [eval_centers[i_high], ndvi_quantiles[i_high, 0], 0.0],
-        [eval_centers[i_high], ndvi_quantiles[i_high, 2], 0.0],
-    ]
-    X_pts = np.array(eval_pts)
-    design = gam._modelmat(X_pts)
-    offsets = np.cumsum([0] + [int(term.n_coefs) for term in gam.terms])
-    cols_built = np.arange(offsets[0], offsets[1])
-    cols_te = np.arange(offsets[2], offsets[3])
-    cols = np.concatenate([cols_built, cols_te])
-    Z = np.hstack(
-        [design[:, cols_built].toarray(), design[:, cols_te].toarray()]
+    eval_pts = np.array(
+        [
+            [eval_centers[i_low], p25, 0.0],
+            [eval_centers[i_low], p75, 0.0],
+            [eval_centers[i_high], p25, 0.0],
+            [eval_centers[i_high], p75, 0.0],
+        ]
     )
-    covariance = gam.statistics_["cov"][np.ix_(cols, cols)]
 
-    Z_contrast = (Z[3] - Z[2]) - (Z[1] - Z[0])
-    contrast_val = float(Z_contrast @ gam.coef_[cols])
-    var_contrast = float(Z_contrast @ covariance @ Z_contrast)
-    se_contrast = float(np.sqrt(max(var_contrast, 0.0)))
+    def contrast_from(fit):
+        design = fit._modelmat(eval_pts)
+        offsets = np.cumsum([0] + [int(term.n_coefs) for term in fit.terms])
+        cols_built = np.arange(offsets[0], offsets[1])
+        cols_te = np.arange(offsets[2], offsets[3])
+        cols = np.concatenate([cols_built, cols_te])
+        Z = np.hstack(
+            [design[:, cols_built].toarray(), design[:, cols_te].toarray()]
+        )
+        covariance = fit.statistics_["cov"][np.ix_(cols, cols)]
+        Z_contrast = (Z[3] - Z[2]) - (Z[1] - Z[0])
+        val = float(Z_contrast @ fit.coef_[cols])
+        var = float(Z_contrast @ covariance @ Z_contrast)
+        se = float(np.sqrt(max(var, 0.0)))
+        return val, se
+
+    contrast_val, se_contrast = contrast_from(gam)
     z = contrast_val / se_contrast if se_contrast > 0 else 0.0
 
-    cond_z = abs(z) > config.VEG_CONTRAST_Z_THRESHOLD
+    # Spatial-block bootstrap of the contrast, smoothing fixed.
+    boot_rng = np.random.default_rng(boot_seed)
+    sub_blocks = sub["block_id"].unique()
+    n_sub_blocks = len(sub_blocks)
+    boot_contrasts = []
+    for _ in range(n_boot):
+        draw = boot_rng.choice(sub_blocks, size=n_sub_blocks, replace=True)
+        rows = sub[sub["block_id"].isin(draw)]
+        Xr = rows[["built", "ndvi", "year_code"]].to_numpy(dtype=float)
+        yr = rows["lst_rel"].to_numpy(dtype=float)
+        try:
+            fit = LinearGAM(full_terms, lam=selected_lam)
+            fit.fit(Xr, yr)
+            val_r, _ = contrast_from(fit)
+            boot_contrasts.append(val_r)
+        except Exception:
+            continue
+    boot_contrasts = np.array(boot_contrasts)
+    n_boot_ok = int(len(boot_contrasts))
+    if n_boot_ok == 0:
+        raise SystemExit("bootstrap: no resample succeeded")
+    boot_lo = float(np.percentile(boot_contrasts, 2.5))
+    boot_hi = float(np.percentile(boot_contrasts, 97.5))
+    if contrast_val != 0:
+        sign_share = float(
+            (np.sign(boot_contrasts) == np.sign(contrast_val)).mean()
+        )
+    else:
+        sign_share = float((boot_contrasts == 0).mean())
+
+    elapsed = time.time() - t0
+
+    cond_ci = (boot_lo > 0) or (boot_hi < 0)
     cond_cv = (folds_favour >= config.VEG_CV_MIN_FOLDS) and (
         mean_diff > config.VEG_CV_MEAN_GAIN_THRESHOLD
     )
-
-    if cond_z and cond_cv:
+    holds = int(cond_ci) + int(cond_cv)
+    if holds == 2:
         outcome = "supported"
-    elif cond_z or cond_cv:
+    elif holds == 1:
         outcome = "weak or inconclusive"
     else:
         outcome = "not supported"
 
-    low_b = int(bin_low["bin"])
-    high_b = int(bin_high["bin"])
-    low_sh = float(bin_low["u_share"])
-    high_sh = float(bin_high["u_share"])
-    low_bl = int(bin_low["n_blocks"])
-    high_bl = int(bin_high["n_blocks"])
-
     text = (
-        f"{outcome}: gap contrast between bin {low_b} ({low_sh:.1%} cells, {low_bl} blocks) "
-        f"and bin {high_b} ({high_sh:.1%} cells, {high_bl} blocks) is {contrast_val:+.2f} K "
-        f"(SE {se_contrast:.2f} K, z = {z:+.2f}; SE ignores spatial autocorrelation); "
+        f"{outcome}: fixed-NDVI gap contrast between bin 1 "
+        f"({share_low_total:.1%} of cells, {blocks_low} blocks; {share_low_between:.1%} "
+        f"of its cells at NDVI [{p25:.3f}, {p75:.3f}]) and bin 20 "
+        f"({share_high_total:.1%} of cells, {blocks_high} blocks; {share_high_between:.1%} "
+        f"of its cells at NDVI [{p25:.3f}, {p75:.3f}]) is {contrast_val:+.2f} K "
+        f"(model SE {se_contrast:.2f} K, z = {z:+.2f}); "
+        f"bootstrap 95% CI [{boot_lo:+.2f}, {boot_hi:+.2f}] over {n_boot_ok} resamples, "
+        f"{sign_share:.1%} with the same sign; "
         f"full model beats additive model in {folds_favour} of {config.CV_FOLDS} folds "
         f"with mean gain {mean_diff:+.3f} R2"
     )
 
     rule = (
-        "Outcomes are conventions chosen after seeing the results: 'supported' means |z| > 2 for "
-        "the gap contrast between lowest and highest bins with at least 30 distinct 5 km blocks AND "
-        "the full model beats the additive model in at least 4 of 5 folds with mean gain > 0.01 R2; "
-        "'weak or inconclusive' means exactly one of those holds; 'not supported' means neither holds. "
-        "The contrast SE is from the coefficient covariance and ignores spatial autocorrelation."
+        "Conventions chosen after seeing the earlier results: 'supported' requires the "
+        "bootstrap 95% interval for the fixed-NDVI contrast to exclude zero AND the full "
+        "model to beat the additive model in at least 4 of 5 folds with mean gain > 0.01 "
+        "R2; 'weak or inconclusive' means exactly one of those holds; 'not supported' "
+        "means neither. The fixed-NDVI correction was made after finding that within-bin "
+        "NDVI p25/p75 differ across built bins, so the NDVI range is not common to bins; "
+        "the test is exploratory. Model-based SE ignores spatial autocorrelation; the "
+        "bootstrap CI accounts for it by resampling 5 km blocks."
     )
 
-    return text, rule
+    info = {
+        "outcome": outcome,
+        "p25": p25,
+        "p75": p75,
+        "share_low_total": share_low_total,
+        "share_high_total": share_high_total,
+        "share_low_between": share_low_between,
+        "share_high_between": share_high_between,
+        "blocks_low": blocks_low,
+        "blocks_high": blocks_high,
+        "contrast": contrast_val,
+        "se": se_contrast,
+        "z": z,
+        "boot_lo": boot_lo,
+        "boot_hi": boot_hi,
+        "n_boot_ok": n_boot_ok,
+        "n_boot": n_boot,
+        "sign_share": sign_share,
+        "folds_favour": folds_favour,
+        "mean_diff": mean_diff,
+        "cond_ci": bool(cond_ci),
+        "cond_cv": bool(cond_cv),
+        "elapsed": elapsed,
+    }
+    return text, rule, info
 
 
 def main():
@@ -440,7 +512,16 @@ def main():
         total_max,
     )
     crossing = zero_crossing_text(total_lines[:, 1], centers)
-    veg_text, veg_rule = vegetation_result_v2(panel, cv["selected_lam"])
+    veg_text, veg_rule, veg_info = vegetation_result_v3(
+        panel, cv["selected_lam"], config.VEG_BOOT_RESPLIES, config.VEG_BOOT_SEED
+    )
+    print(
+        f"{city}: vegetation {veg_info['outcome']} in {veg_info['elapsed']:.0f}s "
+        f"(contrast {veg_info['contrast']:+.2f} K, z = {veg_info['z']:+.2f}, "
+        f"CI [{veg_info['boot_lo']:+.2f}, {veg_info['boot_hi']:+.2f}] over "
+        f"{veg_info['n_boot_ok']}/{veg_info['n_boot']} resamples, "
+        f"CV gain {veg_info['mean_diff']:+.3f} in {veg_info['folds_favour']}/5 folds)"
+    )
 
     direction_rule = (
         "Rule: direction is 'roughly flat' if |p50 end - p50 start| < 0.2 K, "

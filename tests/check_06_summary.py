@@ -65,6 +65,7 @@ def main():
         "unsupported",
         "class 23",
         "vegetation modification",
+        "bootstrap",
         "rule:",
         "done:",
         "shows:",

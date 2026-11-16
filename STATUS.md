@@ -33,8 +33,24 @@ Chennai data adequacy diagnostic (scratchpad only, 300 m non-water cells; pipeli
 
 The ST_QA <= 5 K column is exploration only, not a proposed setting. With QA_PIXEL masking alone, essentially every non-water cell clears `n_obs < 3` in all three cities; the Chennai deficit appears only when `ST_QA <= 3 K` is applied. In Chennai, 6 of 9 scenes in 2022 and 6 of 12 in 2023 lose more than 90% of otherwise-clear pixel area to the ST_QA filter; the scene-median ST_QA is 2.7-6.0 K in 2022 and 2.0-6.3 K in 2023.
 
-Chennai path 142/row 51 fully covers the 50 km circle. No non-water cell is within 2 km of the footprint edge; the minimum edge distance is 35.4 km. Retention after `n_obs < 3` is confirmed: Hyderabad 96.56/95.40/95.09%, Kolkata 92.24/87.56/80.38%, Chennai 8.39/49.34/31.43%. The pipeline `n_obs` is a mean 30 m count per 300 m cell, not the number of scenes with a valid pixel; any-valid-cell shares are more optimistic (Chennai 2022 ST_QA <= 3 K: 74.4% versus 91.6%).
+Chennai path 142/row 51 fully covers the 50 km circle. No non-water cell is within 2 km of the footprint edge; the minimum edge distance is 35.4 km. Retention after `n_obs < 3` at ST_QA_MAX_K = 5: Hyderabad 99.96/99.94/99.95%, Kolkata 99.93/99.87/98.89%, Chennai 89.33/99.41/97.65%. The 3 K retention figures (Hyderabad 96.56/95.40/95.09%, Kolkata 92.24/87.56/80.38%, Chennai 8.39/49.34/31.43%) are superseded. The pipeline `n_obs` is a mean 30 m count per 300 m cell, not the number of scenes with a valid pixel; any-valid-cell shares are more optimistic (Chennai 2022 ST_QA <= 3 K: 74.4% versus 91.6%).
 
 Kolkata diagnostic: 2025 `n_obs < 3` losses concentrate in path-138-only cells (24.0% vs 0.9% in the both-path overlap), and path 138 has cloud-heavy dates in 2025; the losses track path coverage rather than spreading evenly across footprints.
 
 Chennai caveats: the 50 km circle is 50.4% water, the only Landsat footprint is 142/51, and 2022 has 9 scenes with heavy cloud cover. The 2022 class medians and the 2022-based Fig 2 evaluation are based on a small, selected sample. The `built + year` CV R2 is negative, so built fraction has no independent CV skill in this run.
+
+Vegetation rule v3 (fixed-NDVI contrast + spatial-block bootstrap, convention chosen after seeing earlier results; exploratory):
+- Supported requires the bootstrap 95% CI for the contrast to exclude zero AND the full model to beat the additive model in at least 4 of 5 folds with mean gain > 0.01 R2; weak or inconclusive if exactly one holds; not supported if neither.
+- Fixed NDVI values are the city-wide p25/p75 of per-cell mean NDVI over non-water cells, so the same NDVI range is used in every built bin (v2 used within-bin quantiles, so the NDVI range differed between bins).
+- Contrast = (gap at bin 20) minus (gap at bin 1), gap = total effect at NDVI p75 minus total effect at NDVI p25. Model-based SE ignores spatial autocorrelation; bootstrap CI resamples 5 km blocks with replacement and refits the full GAM with selected smoothing fixed.
+
+| City | NDVI p25/p75 | Bin 1 share in range | Bin 20 share in range | Contrast (K) | z | Bootstrap 95% CI | CV gain | folds | Outcome |
+|---|---|---|---|---|---|---|---|---|---|
+| Hyderabad | 0.304 / 0.416 | 52.2% | 2.0% | +3.10 | +4.86 | [+0.67, +4.31] | +0.014 | 5/5 | supported |
+| Kolkata | 0.482 / 0.591 | 46.9% | 0.0% | +1.55 | +1.94 | [-0.08, +2.23] | +0.037 | 5/5 | weak or inconclusive |
+| Chennai | 0.360 / 0.508 | 48.7% | 0.3% | +4.32 | +4.41 | [+1.05, +5.55] | +0.021 | 5/5 | supported |
+
+- Kolkata bin 20 and Chennai bin 20 each have fewer than 5% of their cells in the fixed NDVI range (0.0% and 0.3%), so the contrast at the high-built bin is partly extrapolated; treat those values with caution.
+- Sign changed for Kolkata relative to v2 (-1.05 K) because fixed NDVI values differ from within-bin quantiles; this is the expected effect of the fix.
+
+Pending: Delhi and Bengaluru have not been run (do not run them without approval). The five-city comparison table from the five summary.md files has not been assembled. PLAN.md line 23 still lists years "2019, 2022, 2025" while config.py and the runs use 2022, 2023, 2025; this inconsistency predates this work and was not changed.
