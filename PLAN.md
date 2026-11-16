@@ -20,10 +20,13 @@ These are identical for every city and are never edited per city.
 | Cities | Delhi, Kolkata, Chennai, Bengaluru, Hyderabad |
 | Area | 50 km radius around the city centre |
 | Grid | 300 m cells, EPSG:7755 |
-| Years | 2019, 2022, 2025 |
+| Years | 2022, 2023, 2025 |
 | Season | March–May median composite |
 | Ladder | SMOD 2020: rural (11–13), suburban (21), semi-dense (22), dense (23), centre (30); water excluded |
 | Built-up measure | GHS-BUILT-S 2020 built fraction |
+| ST_QA threshold for clear LST (ST_QA_MAX_K) | 5 K — chosen post-hoc after the Chennai 3 K diagnostic (the original 3 K was an ungrounded user choice, not a Landsat specification); applied to all cities, no per-city tuning |
+| Minimum clear observations per cell (MIN_CLEAR_OBS) | 3 |
+| Max share of missing LST per cell-year (MAX_MISSING_LST_SHARE) | 0.10 |
 | Vegetation | Landsat NDVI |
 | Outcome | `lst_rel` = cell LST minus the median LST of rural cells in that city-year |
 | Data | SMOD, BUILT-S, Landsat 8/9 L2, JRC water mask. Nothing else. |
@@ -36,12 +39,21 @@ One parameterised notebook, `city_analysis.ipynb`, with `CITY = "..."` in the fi
 | :-- | :-- | :-- |
 | 1. Grid | Build the 300 m grid and attach SMOD class and built fraction | Map of classes |
 | 2. Landsat | Extract LST and NDVI per cell for the 3 years; mask clouds and water | Map of mean LST |
-| 3. Table | Join into one table and compute `lst_rel`. Stop and flag if the city has fewer than 200 rural cells per year | Table of cell counts per class |
+| 3. Table | Join into one table and compute `lst_rel`. Drop cells with `n_obs < MIN_CLEAR_OBS` (3). Stop and flag if the city has fewer than 200 rural cells per year | Table of cell counts per class |
 | 4. Gradient | `lst_rel` by ladder class, with spatial-block bootstrap intervals (5 km blocks) | Boxplot by class (Fig 1) |
 | 5. Model | One GAM: `lst_rel ~ s(built) + s(NDVI) + te(built, NDVI)`, scored with 5 km spatial-block cross-validation | Built-up curve (Fig 2), interaction plot (Fig 3), CV R² |
-| 6. Summary | Auto-fill a 5-line summary: median `lst_rel` by class, CV R², shape of the curve, caveats | `summary.md` |
+| 6. Summary | Auto-fill a summary: median `lst_rel` by class with 95% bootstrap intervals, CV R², shape of the curve, vegetation test (rule v3.1), caveats, and the three sentences | `summary.md` |
 
 Everything is saved to `outputs/<city>/`: one table, three figures, one summary. That is 6 steps and about 10 cells, and each step ends in something you can look at.
+
+## Decisions implemented (post-hoc)
+
+These were adopted after seeing earlier results and are applied identically to every city:
+
+- ST_QA_MAX_K = 5 K (post-hoc, from the Chennai diagnostic); MIN_CLEAR_OBS = 3; MAX_MISSING_LST_SHARE = 0.10; cells with `n_obs < 3` are dropped in step 03.
+- Step 05 reports a three-model CV comparison: NDVI + year, built + year, and the full model, on the same 5 km spatial-block folds.
+- Fig 2 is the total built effect `s(built) + te(built, NDVI)` with range, direction and zero crossing per the summary rule; Fig 3 masks regions where almost no cells exist (extrapolation).
+- Vegetation moderation uses rule v3.1: fixed city-wide NDVI p25/p75 contrast (bin 20 minus bin 1) with a spatial-block bootstrap CI; if coverage of the fixed NDVI range is below VEG_MIN_RANGE_SHARE = 0.05 in either bin, the outcome is "not testable with this data" and the contrast is exploratory only; otherwise 'supported' requires the bootstrap CI to exclude zero and the full model to beat the additive model in ≥ 4 of 5 folds with mean gain > 0.01 R2.
 
 ## Combining the cities
 
@@ -99,7 +111,7 @@ The agent must not guess any of these.
 | Landsat LST | C2 L2 `ST_B10`, `DN * 0.00341802 + 149.0` = Kelvin |
 | Landsat NDVI | Surface reflectance `SR_B5`, `SR_B4`, scale `0.0000275`, offset `-0.2` |
 | Cloud mask | `QA_PIXEL` cloud, cloud shadow and dilated cloud bits |
-| Landsat 9 | Starts late 2021, so the 2019 composite is Landsat 8 only. Do not "fix" this. |
+| Landsat 9 | Starts late 2021; all run years (2022, 2023, 2025) use Landsat 8 and 9. Do not edit per year. |
 | SMOD, BUILT-S epoch | 2020 for all three years |
 | Season | 1 March inclusive to 1 June exclusive |
 | Water mask | JRC Global Surface Water occurrence above 50 percent |
