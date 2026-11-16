@@ -68,6 +68,39 @@ blocks with replacement and recomputing the reference median within each draw.
 All reference groups exceed 200 cells and 30 distinct 5 km blocks in every
 city and year (minimum across all: Kolkata Ref_B 2025 = 3,504 cells / 165 blocks).
 
+## Reference median LST differences (K), from each city's panel.parquet
+
+Because `lst_rel = cell_LST − ref_LST`, a cooler rural reference shifts every
+urban class median upward. The table below reports the median LST of each
+reference (median `lst_k` over that reference's cells in that city-year) and the
+difference versus Ref_A (Ref_X − Ref_A). Negative values mean Ref_X is cooler
+than Ref_A.
+
+| City | Year | Ref_A median LST (K) | Ref_A cells | Ref_B median LST (K) | Ref_B − Ref_A (K) | Ref_C median LST (K) | Ref_C − Ref_A (K) |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| Delhi | 2022 | 313.896 | 40,398 | 313.382 | −0.514 | 311.731 | −2.164 |
+| Delhi | 2023 | 309.743 | 40,396 | 309.337 | −0.406 | 307.799 | −1.944 |
+| Delhi | 2025 | 311.040 | 40,398 | 310.645 | −0.395 | 309.797 | −1.244 |
+| Hyderabad | 2022 | 317.918 | 61,598 | 317.902 | −0.016 | 316.255 | −1.663 |
+| Hyderabad | 2023 | 317.225 | 61,597 | 317.251 | +0.026 | 315.409 | −1.816 |
+| Hyderabad | 2025 | 314.594 | 61,605 | 314.740 | +0.145 | 312.891 | −1.703 |
+| Kolkata | 2022 | 307.398 | 13,333 | 307.177 | −0.221 | 306.837 | −0.561 |
+| Kolkata | 2023 | 309.673 | 13,333 | 309.786 | +0.113 | 309.002 | −0.670 |
+| Kolkata | 2025 | 306.952 | 13,025 | 306.619 | −0.333 | 305.856 | −1.096 |
+| Chennai | 2022 | 316.737 | 18,980 | 316.714 | −0.023 | 314.769 | −1.968 |
+| Chennai | 2023 | 314.229 | 20,405 | 314.027 | −0.202 | 312.543 | −1.686 |
+| Chennai | 2025 | 313.149 | 20,034 | 312.992 | −0.157 | 311.313 | −1.836 |
+| Bengaluru | 2022 | 312.912 | 49,202 | 312.359 | −0.553 | 311.181 | −1.731 |
+| Bengaluru | 2023 | 312.947 | 49,240 | 312.463 | −0.485 | 311.614 | −1.333 |
+| Bengaluru | 2025 | 313.137 | 49,250 | 312.533 | −0.604 | 310.961 | −2.176 |
+
+Ref_C is cooler than Ref_A in every city and year (Ref_C − Ref_A ranges from
+−0.561 K in Kolkata 2023 to −2.176 K in Bengaluru 2025). Ref_B is mostly
+slightly cooler than Ref_A, ranging from −0.604 K (Bengaluru 2025) to +0.145 K
+(Hyderabad 2025). Because `lst_rel = cell_LST − ref_LST`, subtracting a cooler
+reference makes urban medians appear higher — this is a reference-level effect,
+not a change in the urban classes themselves.
+
 ## Centre class (class 30) median lst_rel (K) with 95% bootstrap intervals
 
 | City | Year | Ref | Median | CI low | CI high |
@@ -204,10 +237,12 @@ compiled into `outputs/rq1_cross_city_references.md`.
 
 Shows: All reference groups exceed 200 cells and 30 blocks in every city/year
 (minimum Kolkata Ref_B 2025: 3,504 cells / 165 blocks); Ref_C (built < 0.05 and
-high-NDVI rural) is ~1.7 K hotter than Ref_A in every city-year, shifting all
-urban class medians upward by roughly the same amount; the centre-class sign
-changes under Ref_C in Hyderabad 2023, Chennai 2022, and Bengaluru all three
-years, under Ref_B in Delhi 2022, and not at all in Kolkata.
+high-NDVI rural) is cooler than Ref_A in every city-year (median LST difference
+Ref_C − Ref_A from −0.561 K in Kolkata 2023 to −2.176 K in Bengaluru 2025),
+shifting all urban class medians upward by roughly the same amount because
+`lst_rel = cell_LST − ref_LST`; the centre-class sign changes under Ref_C in
+Hyderabad 2023, Chennai 2022, and Bengaluru all three years, under Ref_B in
+Delhi 2022, and not at all in Kolkata.
 
 Could be wrong: Intervals reflect only the spatial-block bootstrap over each
 city's grid; results are city-specific and not generalizable; Ref_C is a
@@ -217,13 +252,16 @@ reference level shifting, not by changes in the urban classes themselves.
 
 ## Anything unusual
 
-The Ref_C reference median is consistently ~1.7 K hotter than Ref_A across all
-five cities and all three years, so every urban class median shifts up by ~1.7 K
-under Ref_C. This uniform shift means the centre sign flips are a reference
-artifact: where the centre is weakly negative or near zero under Ref_A/Ref_B
+Ref_C (vegetated rural: SMOD 11–13 with built < 0.05 and NDVI above the Ref_A
+median) is consistently COOLER than Ref_A — median LST difference Ref_C − Ref_A
+ranges from −0.561 K (Kolkata 2023) to −2.176 K (Bengaluru 2025) — so every
+urban class median shifts up under Ref_C purely because `lst_rel =
+cell_LST − ref_LST`. The centre sign flips are therefore a reference artifact:
+where the centre is weakly negative or near zero under Ref_A/Ref_B
 (Delhi 2022, Hyderabad 2023, Chennai 2022, Bengaluru all years), Ref_C pushes
 it positive. Bengaluru is the only city where the centre flips sign under Ref_C
-in all three years while staying negative under Ref_A and Ref_B.
+in all three years while staying negative under Ref_A and Ref_B. Ref_B differs
+from Ref_A by at most ±0.6 K and never flips the centre sign except Delhi 2022.
 
 ## Assumptions not in PLAN.md
 
