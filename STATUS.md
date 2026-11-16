@@ -51,8 +51,9 @@ Vegetation rule v3.1 (fixed-NDVI contrast + spatial-block bootstrap with a cover
 | Kolkata | 0.482 / 0.591 | 46.9% | 0.0% | +1.55 | +1.94 | [-0.08, +2.23] | +0.037 | 5/5 | not testable with this data |
 | Chennai | 0.360 / 0.508 | 48.7% | 0.3% | +4.32 | +4.41 | [+1.05, +5.55] | +0.021 | 5/5 | not testable with this data |
 | Delhi | 0.244 / 0.343 | 61.6% | 0.5% | +5.27 | +9.71 | [+3.32, +6.29] | +0.007 | 4/5 | not testable with this data |
+| Bengaluru | 0.349 / 0.461 | 51.4% | 3.3% | +0.19 | +0.36 | [-0.82, +0.97] | +0.013 | 4/5 | not testable with this data |
 
-- All four cities with v3.1 results (Hyderabad, Kolkata, Chennai, Delhi) have fewer than 5% of bin-20 cells in the fixed NDVI range (Hyderabad 2.0%, Kolkata 0.0%, Chennai 0.3%, Delhi 0.5%). Hyderabad was not flagged in the earlier v3 report but is now covered by the same condition. The contrast is extrapolation in every city and is not a supported test of vegetation moderation.
+- All five cities with v3.1 results (Hyderabad, Kolkata, Chennai, Delhi, Bengaluru) have fewer than 5% of bin-20 cells in the fixed NDVI range (Hyderabad 2.0%, Kolkata 0.0%, Chennai 0.3%, Delhi 0.5%, Bengaluru 3.3%). Hyderabad was not flagged in the earlier v3 report but is now covered by the same condition. The contrast is extrapolation in every city and is not a supported test of vegetation moderation.
 - Sign changed for Kolkata relative to v2 (-1.05 K) because fixed NDVI values differ from within-bin quantiles; this is the expected effect of the fix.
 
 Delhi diagnostic (report only):
@@ -62,4 +63,4 @@ Delhi diagnostic (report only):
 - Centre lst_rel change: 2022→2023 driven mainly by the rural reference (rural LST 313.90→309.74 K vs centre 313.60→309.88 K); 2023→2025 driven mainly by the centre itself (rural 309.74→311.04 K vs centre 309.88→312.06 K). Diagnostic only, not a causal claim.
 - Class 22: 869 cells in 61 distinct 5 km blocks; three largest blocks hold 15.2% of cells (max block 5.9%), so not driven by a few localities; per-year median lst_rel +2.93 / +1.47 / +1.39 K.
 
-Pending: Bengaluru has not been run (do not run it without approval). Delhi is complete (unreviewed first run). The five-city comparison table from the five summary.md files has not been assembled. PLAN.md line 23 still lists years "2019, 2022, 2025" while config.py and the runs use 2022, 2023, 2025; this inconsistency predates this work and was not changed.
+Pending: All five cities (Delhi, Kolkata, Chennai, Bengaluru, Hyderabad) have been run (all unreviewed first runs except Hyderabad reviewed earlier). The five-city comparison table from the five summary.md files has not been assembled. PLAN.md line 23 still lists years "2019, 2022, 2025" while config.py and the runs use 2022, 2023, 2025; this inconsistency predates this work and was not changed.
