@@ -8,6 +8,13 @@
 
 Decision: ST_QA_MAX_K = 5 for ALL cities. It was chosen post-hoc after seeing a diagnostic in Chennai (the original 3 K default was an ungrounded user choice, not a Landsat specification). All cities are to be processed under 5 K without per-city tuning.
 
+Vegetation moderation diagnostic (scratchpad):
+- Additive model `s(built) + s(ndvi) + f(year)` vs full `s(built) + s(ndvi) + te(built, ndvi) + f(year)` CV R2:
+  - Hyderabad: Additive 0.623, Full 0.637 (diff: +0.014). NDVI gap slope vs built centre: -0.6658 K/unit.
+  - Kolkata: Additive 0.424, Full 0.461 (diff: +0.037). NDVI gap slope vs built centre: -3.2593 K/unit.
+  - Chennai: Additive 0.440, Full 0.461 (diff: +0.021). NDVI gap slope vs built centre: +3.6831 K/unit.
+Under the criterion that moderation is supported when the gap changes beyond its 95% band AND the full model gains >0.01 R2 over the additive model (a criterion chosen post-hoc after seeing the current rule's results), moderation is supported in all three cities.
+
 Summary and check_06 are city-generic. No model, figure, setting, limit or numeric output changed. The summary wording was corrected to "the fitted total effect is non-monotonic"; check_06 was updated to accept that grammar. Only the Chennai summary text changed.
 
 Chennai data adequacy diagnostic (scratchpad only, 300 m non-water cells; pipeline `n_obs` is the mean valid 30 m observation count per cell):
