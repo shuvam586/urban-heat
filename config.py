@@ -63,6 +63,7 @@ VEG_CONTRAST_Z_THRESHOLD = 2.0
 VEG_CV_MIN_FOLDS = 4
 VEG_CV_MEAN_GAIN_THRESHOLD = 0.01
 
-# Vegetation rule v3: fixed-NDVI contrast + spatial-block bootstrap
+# Vegetation rule v3.1: fixed-NDVI contrast + spatial-block bootstrap
 VEG_BOOT_RESPLIES = 200
 VEG_BOOT_SEED = 42
+VEG_MIN_RANGE_SHARE = 0.05

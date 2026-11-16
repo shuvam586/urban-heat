@@ -155,8 +155,8 @@ def zero_crossing_text(p50, centers):
     return "does not cross zero inside the plotted range"
 
 
-def vegetation_result_v3(panel, selected_lam, n_boot, boot_seed):
-    """Evaluate vegetation moderation under convention v3.
+def vegetation_result_v3(panel, selected_lam, n_boot, boot_seed, min_range_share):
+    """Evaluate vegetation moderation under convention v3.1.
 
     Fixed NDVI contrast: the NDVI p25/p75 are computed city-wide over
     non-water cells (mean NDVI per unique cell), so the same NDVI values
@@ -167,6 +167,10 @@ def vegetation_result_v3(panel, selected_lam, n_boot, boot_seed):
     coefficient covariance; a 5 km spatial-block bootstrap (blocks
     resampled with replacement, full GAM refit with the selected
     smoothing fixed, no new grid search) supplies the bootstrap CI.
+
+    If either bin's fixed-NDVI-range coverage is below min_range_share,
+    the label is "not testable with this data" and the contrast/z/CI are
+    reported as exploratory only; otherwise the v3 rule applies.
     """
     t0 = time.time()
     block_key = (
@@ -223,6 +227,10 @@ def vegetation_result_v3(panel, selected_lam, n_boot, boot_seed):
     )
     blocks_low = int(bin_cells_low["block_id"].nunique())
     blocks_high = int(bin_cells_high["block_id"].nunique())
+    coverage_ok = (
+        share_low_between >= min_range_share
+        and share_high_between >= min_range_share
+    )
 
     # Subsample identical to the step 05 fit; fixed-lam GAM fit.
     cell_ids = panel["grid_id"].unique()
@@ -328,40 +336,60 @@ def vegetation_result_v3(panel, selected_lam, n_boot, boot_seed):
 
     elapsed = time.time() - t0
 
+    coverage_text = (
+        f"bin 1 ({share_low_total:.1%} of cells, {blocks_low} blocks; "
+        f"{share_low_between:.1%} of its cells at NDVI [{p25:.3f}, {p75:.3f}]) "
+        f"and bin 20 ({share_high_total:.1%} of cells, {blocks_high} blocks; "
+        f"{share_high_between:.1%} of its cells at NDVI [{p25:.3f}, {p75:.3f}])"
+    )
+
     cond_ci = (boot_lo > 0) or (boot_hi < 0)
     cond_cv = (folds_favour >= config.VEG_CV_MIN_FOLDS) and (
         mean_diff > config.VEG_CV_MEAN_GAIN_THRESHOLD
     )
-    holds = int(cond_ci) + int(cond_cv)
-    if holds == 2:
-        outcome = "supported"
-    elif holds == 1:
-        outcome = "weak or inconclusive"
-    else:
-        outcome = "not supported"
 
-    text = (
-        f"{outcome}: fixed-NDVI gap contrast between bin 1 "
-        f"({share_low_total:.1%} of cells, {blocks_low} blocks; {share_low_between:.1%} "
-        f"of its cells at NDVI [{p25:.3f}, {p75:.3f}]) and bin 20 "
-        f"({share_high_total:.1%} of cells, {blocks_high} blocks; {share_high_between:.1%} "
-        f"of its cells at NDVI [{p25:.3f}, {p75:.3f}]) is {contrast_val:+.2f} K "
-        f"(model SE {se_contrast:.2f} K, z = {z:+.2f}); "
-        f"bootstrap 95% CI [{boot_lo:+.2f}, {boot_hi:+.2f}] over {n_boot_ok} resamples, "
-        f"{sign_share:.1%} with the same sign; "
-        f"full model beats additive model in {folds_favour} of {config.CV_FOLDS} folds "
-        f"with mean gain {mean_diff:+.3f} R2"
-    )
+    if not coverage_ok:
+        outcome = "not testable with this data"
+        text = (
+            f"{outcome}: fixed-NDVI gap contrast between {coverage_text} is "
+            f"{contrast_val:+.2f} K (exploratory only; model SE "
+            f"{se_contrast:.2f} K, z = {z:+.2f}); bootstrap 95% CI "
+            f"[{boot_lo:+.2f}, {boot_hi:+.2f}] over {n_boot_ok} resamples, "
+            f"{sign_share:.1%} with the same sign. Coverage of the fixed "
+            f"NDVI range is below {min_range_share:.0%} in at least one "
+            f"bin, so the contrast is extrapolation and is not a supported "
+            f"test of vegetation moderation."
+        )
+    else:
+        holds = int(cond_ci) + int(cond_cv)
+        if holds == 2:
+            outcome = "supported"
+        elif holds == 1:
+            outcome = "weak or inconclusive"
+        else:
+            outcome = "not supported"
+        text = (
+            f"{outcome}: fixed-NDVI gap contrast between {coverage_text} is "
+            f"{contrast_val:+.2f} K (model SE {se_contrast:.2f} K, z = "
+            f"{z:+.2f}); bootstrap 95% CI [{boot_lo:+.2f}, {boot_hi:+.2f}] "
+            f"over {n_boot_ok} resamples, {sign_share:.1%} with the same "
+            f"sign"
+        )
 
     rule = (
-        "Conventions chosen after seeing the earlier results: 'supported' requires the "
-        "bootstrap 95% interval for the fixed-NDVI contrast to exclude zero AND the full "
-        "model to beat the additive model in at least 4 of 5 folds with mean gain > 0.01 "
-        "R2; 'weak or inconclusive' means exactly one of those holds; 'not supported' "
-        "means neither. The fixed-NDVI correction was made after finding that within-bin "
-        "NDVI p25/p75 differ across built bins, so the NDVI range is not common to bins; "
-        "the test is exploratory. Model-based SE ignores spatial autocorrelation; the "
-        "bootstrap CI accounts for it by resampling 5 km blocks."
+        "Conventions chosen after seeing the earlier results; this is the "
+        "third version of the rule. 'Supported' requires the bootstrap 95% "
+        "interval for the fixed-NDVI contrast to exclude zero AND the full "
+        "model to beat the additive model in at least 4 of 5 folds with "
+        "mean gain > 0.01 R2; 'weak or inconclusive' means exactly one of "
+        "those holds; 'not supported' means neither. If coverage of the "
+        "fixed NDVI range is below 5% in either bin, the contrast is "
+        "extrapolation and the label is 'not testable with this data'. The "
+        "fixed-NDVI correction was made after finding that within-bin NDVI "
+        "p25/p75 differ across built bins, so the NDVI range is not common "
+        "to bins; the test is exploratory. Model-based SE ignores spatial "
+        "autocorrelation; the bootstrap CI accounts for it by resampling 5 "
+        "km blocks."
     )
 
     info = {
@@ -384,6 +412,7 @@ def vegetation_result_v3(panel, selected_lam, n_boot, boot_seed):
         "sign_share": sign_share,
         "folds_favour": folds_favour,
         "mean_diff": mean_diff,
+        "coverage_ok": bool(coverage_ok),
         "cond_ci": bool(cond_ci),
         "cond_cv": bool(cond_cv),
         "elapsed": elapsed,
@@ -513,7 +542,18 @@ def main():
     )
     crossing = zero_crossing_text(total_lines[:, 1], centers)
     veg_text, veg_rule, veg_info = vegetation_result_v3(
-        panel, cv["selected_lam"], config.VEG_BOOT_RESPLIES, config.VEG_BOOT_SEED
+        panel,
+        cv["selected_lam"],
+        config.VEG_BOOT_RESPLIES,
+        config.VEG_BOOT_SEED,
+        config.VEG_MIN_RANGE_SHARE,
+    )
+    cv_sentence = (
+        f"The full model beats the additive model in "
+        f"{veg_info['folds_favour']} of {config.CV_FOLDS} folds with mean "
+        f"gain {veg_info['mean_diff']:+.3f} R2; this shows the interaction "
+        f"adds a small predictive gain but does not show the direction or "
+        f"cause of any moderation."
     )
     print(
         f"{city}: vegetation {veg_info['outcome']} in {veg_info['elapsed']:.0f}s "
@@ -566,7 +606,7 @@ def main():
 - Total built effect: `s(built) + te(built, NDVI)` {curve_core} {unsupported_words}
 - Built fraction is zero-inflated: {below01:.1%} of cells are below 0.1 and {s04:.1%} are above 0.4 ({s05:.1%} above 0.5); the high-built part of the curve is sparse.
 - H2 (nonlinearity): {curve_text} This is descriptive, not a formal test, and cells above built 0.4 are sparse ({n04:,}, {s04:.1%}).
-- H2 (vegetation modification): {veg_text}.
+- H2 (vegetation modification): {veg_text} {cv_sentence}
 
 ## Median lst_rel by class (K)
 | class | {years[0]} | {years[1]} | {years[2]} |
@@ -606,7 +646,7 @@ Only {n04:,} cells ({s04:.2%}) are above built 0.4 and {n05:,} ({s05:.2%}) above
 Built fraction is zero-inflated: {cv['n_cells_below_built_0.1']:,} cells ({below01:.1%}) are below 0.1, {n04:,} ({s04:.1%}) are above 0.4, and {n05:,} ({s05:.1%}) are above 0.5. The high-built part of the curve is sparse.
 
 ## Hypotheses
-H2 (nonlinearity): {curve_text} This is descriptive, not a formal test, and high-built cells are sparse. H2 (vegetation modification): {veg_text}. {veg_rule}
+H2 (nonlinearity): {curve_text} This is descriptive, not a formal test, and high-built cells are sparse. H2 (vegetation modification): {veg_text} {cv_sentence} {veg_rule}
 
 ## Caveats
 - The outcome is satellite land surface temperature, not air temperature; heatwave claims are out of scope.
@@ -620,7 +660,7 @@ H2 (nonlinearity): {curve_text} This is descriptive, not a formal test, and high
 
 ## Three sentences
 Done: I ran steps 01 to 06 for {city} for {years[0]}, {years[1]} and {years[2]}, fitting the GAM on a random subsample of {cv['subsample_cells']:,} cells ({cv['subsample_rows']:,} rows) with 5 km spatial-block cross-validation.
-Shows: Centre-class median `lst_rel` is {medians.loc['centre', years[0]]:.2f}, {medians.loc['centre', years[1]]:.2f} and {medians.loc['centre', years[2]]:.2f} K in {years[0]}, {years[1]} and {years[2]}; {cv_core}; H2 nonlinearity: the fitted total effect {curve_no_period}; H2 vegetation modification: {veg_text}.
+Shows: Centre-class median `lst_rel` is {medians.loc['centre', years[0]]:.2f}, {medians.loc['centre', years[1]]:.2f} and {medians.loc['centre', years[2]]:.2f} K in {years[0]}, {years[1]} and {years[2]}; {cv_core}; H2 nonlinearity: the fitted total effect {curve_no_period}; H2 vegetation modification: {veg_text} {cv_sentence}
 Could be wrong: The curve is unsupported in sparse high-built bins, the GAM uses a {cv['subsample_cells']:,}-cell subsample and smoothing selected {smoothing_edge}, the 95% band is conditional on that smoothing, and all results are associations, not causal effects.
 """
 
