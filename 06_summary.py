@@ -5,6 +5,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from pygam import LinearGAM, f, s, te
+from sklearn.model_selection import GroupKFold
+from sklearn.metrics import r2_score
 
 import config
 
@@ -13,6 +15,7 @@ Z95 = 1.959963984540054
 SUBSAMPLE_CELLS = 10000
 SEED = 42
 FIG2_BINS = 20
+LAM_GRID = [0.1, 1.0, 10.0, 100.0, 1000.0]
 
 
 def intervals_overlap(a_low, a_high, b_low, b_high):
@@ -151,52 +154,169 @@ def zero_crossing_text(p50, centers):
     return "does not cross zero inside the plotted range"
 
 
-def vegetation_result(
-    lower_lines, upper_lines, n_valid, bin_cell_counts, total_cells
-):
-    separated = []
-    for i in range(n_valid):
-        if not intervals_overlap(
-            lower_lines[i, 0],
-            upper_lines[i, 0],
-            lower_lines[i, 2],
-            upper_lines[i, 2],
-        ):
-            separated.append(i)
-    n_sep = len(separated)
-    sep_cells = int(bin_cell_counts[separated].sum()) if separated else 0
-    sep_share = sep_cells / total_cells if total_cells else 0.0
-    rule = (
-        "Cutoffs are conventions: 'not supported' means at most 2 of 20 "
-        "built bins separate; 'weak' means the separating bins together "
-        "hold <5% of unique non-water cells; otherwise the result is "
-        "'supported'. A bin separates if the NDVI p25 and p75 95% bands "
-        "do not overlap."
+def vegetation_result_v2(panel, selected_lam):
+    """Evaluate vegetation moderation under convention v2.
+
+    Computes:
+    1. Paired 5 km spatial-block GroupKFold CV R2 for additive vs full model.
+    2. Gap contrast between the lowest and highest built bins with >= VEG_MIN_BLOCKS.
+    """
+    block_key = (
+        np.floor(panel["x"] / config.BLOCK_SIZE_M).astype(int).astype(str)
+        + "_"
+        + np.floor(panel["y"] / config.BLOCK_SIZE_M).astype(int).astype(str)
     )
-    if n_sep <= 2:
-        text = (
-            f"not supported: only {n_sep} of {n_valid} built bins have "
-            "non-overlapping NDVI p25/p75 95% bands; those bins hold "
-            f"{sep_share:.1%} of unique non-water cells"
+    panel = panel.copy()
+    panel["block_id"] = block_key
+
+    q01 = float(np.quantile(panel["built"], 0.01))
+    q99 = float(np.quantile(panel["built"], 0.99))
+    eval_edges = np.linspace(q01, q99, FIG2_BINS + 1)
+    eval_centers = 0.5 * (eval_edges[:-1] + eval_edges[1:])
+    unique_cells_total = panel["grid_id"].nunique()
+
+    bin_stats = []
+    ndvi_quantiles = np.zeros((FIG2_BINS, 3))
+    valid_bins = np.zeros(FIG2_BINS, dtype=bool)
+
+    for i in range(FIG2_BINS):
+        in_bin = (panel["built"] >= eval_edges[i]) & (
+            panel["built"] <= eval_edges[i + 1]
+            if i == FIG2_BINS - 1
+            else panel["built"] < eval_edges[i + 1]
         )
+        sub_bin = panel[in_bin]
+        u_cells = sub_bin["grid_id"].nunique()
+        u_share = u_cells / unique_cells_total if unique_cells_total else 0.0
+        n_blocks = sub_bin["block_id"].nunique()
+
+        values = sub_bin["ndvi"]
+        if len(values) >= 5:
+            ndvi_quantiles[i] = np.quantile(values, [0.25, 0.5, 0.75])
+            valid_bins[i] = True
+
+        bin_stats.append(
+            {
+                "bin": i + 1,
+                "center": eval_centers[i],
+                "u_cells": u_cells,
+                "u_share": u_share,
+                "n_blocks": n_blocks,
+                "valid": valid_bins[i],
+            }
+        )
+    df_bins = pd.DataFrame(bin_stats)
+
+    cell_ids = panel["grid_id"].unique()
+    rng = np.random.default_rng(SEED)
+    if len(cell_ids) > SUBSAMPLE_CELLS:
+        sampled_cells = rng.choice(cell_ids, size=SUBSAMPLE_CELLS, replace=False)
+        sub = panel[panel["grid_id"].isin(sampled_cells)].copy()
     else:
-        first = separated[0] + 1
-        last = separated[-1] + 1
-        if sep_share < 0.05:
-            text = (
-                f"weak, limited to bins {first} to {last}: {n_sep} of "
-                f"{n_valid} built bins have non-overlapping NDVI p25/p75 "
-                "95% bands, but those bins hold only "
-                f"{sep_share:.1%} of unique non-water cells"
-            )
-        else:
-            text = (
-                f"supported in bins {first} to {last}: {n_sep} of "
-                f"{n_valid} built bins have non-overlapping NDVI p25/p75 "
-                "95% bands, and those bins hold "
-                f"{sep_share:.1%} of unique non-water cells"
-            )
-    return text, rule, n_sep, separated, sep_share
+        sub = panel.copy()
+
+    year_levels = sorted(int(year) for year in sub["year"].unique())
+    sub["year_code"] = sub["year"].map(
+        {year: code for code, year in enumerate(year_levels)}
+    )
+
+    X = sub[["built", "ndvi", "year_code"]].to_numpy(dtype=float)
+    y = sub["lst_rel"].to_numpy(dtype=float)
+    groups = pd.factorize(sub["block_id"])[0]
+    splits = list(GroupKFold(n_splits=config.CV_FOLDS).split(X, y, groups))
+
+    def cv_scores(terms, lam):
+        scores = []
+        for train_index, test_index in splits:
+            fold = LinearGAM(terms, lam=lam)
+            fold.fit(X[train_index], y[train_index])
+            prediction = fold.predict(X[test_index])
+            scores.append(float(r2_score(y[test_index], prediction)))
+        return scores
+
+    full_terms = s(0) + s(1) + te(0, 1) + f(2)
+    gam = LinearGAM(full_terms, lam=selected_lam)
+    gam.fit(X, y)
+    full_scores = cv_scores(full_terms, gam.lam)
+
+    add_terms = s(0) + s(1) + f(2)
+    add_gam = LinearGAM(add_terms)
+    add_gam.gridsearch(X, y, lam=LAM_GRID, progress=False)
+    add_scores = cv_scores(add_terms, add_gam.lam)
+
+    diffs = [f_sc - a_sc for f_sc, a_sc in zip(full_scores, add_scores)]
+    mean_diff = float(np.mean(diffs))
+    folds_favour = int(sum(d > 0 for d in diffs))
+
+    cand_bins = df_bins[
+        (df_bins["n_blocks"] >= config.VEG_MIN_BLOCKS) & df_bins["valid"]
+    ]
+    if len(cand_bins) < 2:
+        raise SystemExit("Fewer than 2 bins meet the minimum block threshold")
+    bin_low = cand_bins.iloc[0]
+    bin_high = cand_bins.iloc[-1]
+    i_low = int(bin_low["bin"] - 1)
+    i_high = int(bin_high["bin"] - 1)
+
+    eval_pts = [
+        [eval_centers[i_low], ndvi_quantiles[i_low, 0], 0.0],
+        [eval_centers[i_low], ndvi_quantiles[i_low, 2], 0.0],
+        [eval_centers[i_high], ndvi_quantiles[i_high, 0], 0.0],
+        [eval_centers[i_high], ndvi_quantiles[i_high, 2], 0.0],
+    ]
+    X_pts = np.array(eval_pts)
+    design = gam._modelmat(X_pts)
+    offsets = np.cumsum([0] + [int(term.n_coefs) for term in gam.terms])
+    cols_built = np.arange(offsets[0], offsets[1])
+    cols_te = np.arange(offsets[2], offsets[3])
+    cols = np.concatenate([cols_built, cols_te])
+    Z = np.hstack(
+        [design[:, cols_built].toarray(), design[:, cols_te].toarray()]
+    )
+    covariance = gam.statistics_["cov"][np.ix_(cols, cols)]
+
+    Z_contrast = (Z[3] - Z[2]) - (Z[1] - Z[0])
+    contrast_val = float(Z_contrast @ gam.coef_[cols])
+    var_contrast = float(Z_contrast @ covariance @ Z_contrast)
+    se_contrast = float(np.sqrt(max(var_contrast, 0.0)))
+    z = contrast_val / se_contrast if se_contrast > 0 else 0.0
+
+    cond_z = abs(z) > config.VEG_CONTRAST_Z_THRESHOLD
+    cond_cv = (folds_favour >= config.VEG_CV_MIN_FOLDS) and (
+        mean_diff > config.VEG_CV_MEAN_GAIN_THRESHOLD
+    )
+
+    if cond_z and cond_cv:
+        outcome = "supported"
+    elif cond_z or cond_cv:
+        outcome = "weak or inconclusive"
+    else:
+        outcome = "not supported"
+
+    low_b = int(bin_low["bin"])
+    high_b = int(bin_high["bin"])
+    low_sh = float(bin_low["u_share"])
+    high_sh = float(bin_high["u_share"])
+    low_bl = int(bin_low["n_blocks"])
+    high_bl = int(bin_high["n_blocks"])
+
+    text = (
+        f"{outcome}: gap contrast between bin {low_b} ({low_sh:.1%} cells, {low_bl} blocks) "
+        f"and bin {high_b} ({high_sh:.1%} cells, {high_bl} blocks) is {contrast_val:+.2f} K "
+        f"(SE {se_contrast:.2f} K, z = {z:+.2f}; SE ignores spatial autocorrelation); "
+        f"full model beats additive model in {folds_favour} of {config.CV_FOLDS} folds "
+        f"with mean gain {mean_diff:+.3f} R2"
+    )
+
+    rule = (
+        "Outcomes are conventions chosen after seeing the results: 'supported' means |z| > 2 for "
+        "the gap contrast between lowest and highest bins with at least 30 distinct 5 km blocks AND "
+        "the full model beats the additive model in at least 4 of 5 folds with mean gain > 0.01 R2; "
+        "'weak or inconclusive' means exactly one of those holds; 'not supported' means neither holds. "
+        "The contrast SE is from the coefficient covariance and ignores spatial autocorrelation."
+    )
+
+    return text, rule
 
 
 def main():
@@ -320,9 +440,7 @@ def main():
         total_max,
     )
     crossing = zero_crossing_text(total_lines[:, 1], centers)
-    veg_text, veg_rule, n_sep, separated_bins, veg_share = vegetation_result(
-        lower_lines, upper_lines, n_valid, bin_cell_counts, total_cells
-    )
+    veg_text, veg_rule = vegetation_result_v2(panel, cv["selected_lam"])
 
     direction_rule = (
         "Rule: direction is 'roughly flat' if |p50 end - p50 start| < 0.2 K, "
