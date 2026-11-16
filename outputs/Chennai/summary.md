@@ -1,60 +1,60 @@
 # Chennai: Urban Heat Summary
 
 ## Key summary
-- Median `lst_rel` by class: rural is the reference; the centre class is -1.92, -0.34, 0.02 K in 2022/2023/2025. Class 23 has 126, 556, 360 cells in 2022/2023/2025; its medians are -1.17, -0.31, +0.71 K. The 95% bootstrap intervals separate 2022 vs 2023, 2022 vs 2025; the other pairs overlap.
-- CV R2: NDVI + year 0.447, built + year -0.041, full 0.487; the full model gains 0.040 R2 over NDVI + year.
-- Total built effect: `s(built) + te(built, NDVI)` is non-monotonic; across the NDVI lines, -2.3 to +0.2 K at built 0.00 and -2.3 to -1.3 K at built 0.50; it does not cross zero inside the plotted range. The curve is unsupported where cells are sparse: 2,108 cells (5.46%) are above built 0.4 and 411 (1.06%) above 0.5.
-- Built fraction is zero-inflated: 78.0% of cells are below 0.1 and 5.5% are above 0.4 (1.1% above 0.5); the high-built part of the curve is sparse.
-- H2 (nonlinearity): the fitted total effect is non-monotonic; across the NDVI lines, -2.3 to +0.2 K at built 0.00 and -2.3 to -1.3 K at built 0.50; it does not cross zero inside the plotted range. This is descriptive, not a formal test, and cells above built 0.4 are sparse (2,108, 5.5%).
-- H2 (vegetation modification): not supported: only 0 of 20 built bins have non-overlapping NDVI p25/p75 95% bands; those bins hold 0.0% of unique non-water cells.
+- Median `lst_rel` by class: rural is the reference; the centre class is -0.06, 0.54, 0.04 K in 2022/2023/2025. Class 23 has 1,300, 1,435, 1,436 cells in 2022/2023/2025; its medians are -0.12, +0.62, +0.62 K. The 95% bootstrap intervals overlap for all year pairs, so they do not separate the class 23 medians.
+- CV R2: NDVI + year 0.430, built + year 0.032, full 0.461; the full model gains 0.031 R2 over NDVI + year.
+- Total built effect: `s(built) + te(built, NDVI)` is roughly flat; across the NDVI lines, -2.9 to +0.2 K at built 0.00 and -1.6 to -0.9 K at built 0.49; it does not cross zero inside the plotted range. The curve is unsupported where cells are sparse: 6,308 cells (5.09%) are above built 0.4 and 1,067 (0.86%) above 0.5.
+- Built fraction is zero-inflated: 77.4% of cells are below 0.1 and 5.1% are above 0.4 (0.9% above 0.5); the high-built part of the curve is sparse.
+- H2 (nonlinearity): the fitted total effect is roughly flat; across the NDVI lines, -2.9 to +0.2 K at built 0.00 and -1.6 to -0.9 K at built 0.49; it does not cross zero inside the plotted range. This is descriptive, not a formal test, and cells above built 0.4 are sparse (6,308, 5.1%).
+- H2 (vegetation modification): supported in bins 1 to 3: 3 of 20 built bins have non-overlapping NDVI p25/p75 95% bands, and those bins hold 73.2% of unique non-water cells.
 
 ## Median lst_rel by class (K)
 | class | 2022 | 2023 | 2025 |
 |---|---:|---:|---:|
-| rural | -0.00 | 0.00 | 0.00 |
-| suburban | -1.79 | -0.61 | -0.68 |
-| semi-dense | -2.90 | -1.16 | -1.57 |
-| dense | -1.17 | -0.31 | 0.71 |
-| centre | -1.92 | -0.34 | 0.02 |
+| rural | 0.00 | 0.00 | -0.00 |
+| suburban | -0.76 | -0.12 | -0.33 |
+| semi-dense | -0.48 | -0.40 | -0.24 |
+| dense | -0.12 | 0.62 | 0.62 |
+| centre | -0.06 | 0.54 | 0.04 |
 
 ## Class 23 detail
-- 2022: 126 cells, median -1.17 K, 95% interval [-2.04, -0.98]
-- 2023: 556 cells, median -0.31 K, 95% interval [-0.72, +0.30]
-- 2025: 360 cells, median +0.71 K, 95% interval [-0.75, +1.92]
-The 95% bootstrap intervals separate 2022 vs 2023, 2022 vs 2025; the other pairs overlap.
+- 2022: 1,300 cells, median -0.12 K, 95% interval [-0.96, +0.84]
+- 2023: 1,435 cells, median +0.62 K, 95% interval [+0.21, +1.16]
+- 2025: 1,436 cells, median +0.62 K, 95% interval [+0.05, +1.30]
+The 95% bootstrap intervals overlap for all year pairs, so they do not separate the class 23 medians.
 
 ## Total built effect (Fig 2)
-The fitted total effect is non-monotonic; across the NDVI lines, -2.3 to +0.2 K at built 0.00 and -2.3 to -1.3 K at built 0.50; it does not cross zero inside the plotted range.
+The fitted total effect is roughly flat; across the NDVI lines, -2.9 to +0.2 K at built 0.00 and -1.6 to -0.9 K at built 0.49; it does not cross zero inside the plotted range.
 
 Rule: direction is 'roughly flat' if |p50 end - p50 start| < 0.2 K, 'non-monotonic' if the p50 range exceeds 1.5 x |end - start| + 0.2 K, otherwise 'rises' or 'falls' from the sign of end - start; a zero crossing is reported when the p50 line changes sign inside the plotted range.
 
-The fitted total effect ranges from -2.55 to 0.24 K over the 1st to 99th percentile of built (0.00 to 0.50). The plot uses 20 built bins, NDVI at its 25th/50th/75th percentile within each bin, year 2022, and a rug of observed built values.
+The fitted total effect ranges from -2.86 to 0.17 K over the 1st to 99th percentile of built (0.00 to 0.49). The plot uses 20 built bins, NDVI at its 25th/50th/75th percentile within each bin, year 2022, and a rug of observed built values.
 
 The 95% band is a model-based 95% band for the summed s(built)+te terms using the coefficient covariance, conditional on the selected smoothing.
 
-Only 2,108 cells (5.46%) are above built 0.4 and 411 (1.06%) above 0.5; the curve is unsupported where cells are sparse.
+Only 6,308 cells (5.09%) are above built 0.4 and 1,067 (0.86%) above 0.5; the curve is unsupported where cells are sparse.
 
 ## GAM and cross-validation
 - Model: `lst_rel ~ s(built) + s(ndvi) + te(built, ndvi) + f(year)`.
-- Fit: 10,000 randomly sampled cells, all available years, 13,924 rows.
+- Fit: 10,000 randomly sampled cells, all available years, 28,706 rows.
 - Validation: 5 folds, 5000 m spatial blocks, GroupKFold.
-- Full-model CV R2: mean 0.487, spread 0.059 (min 0.373, max 0.540).
+- Full-model CV R2: mean 0.461, spread 0.017 (min 0.435, max 0.485).
 - Convergence: True.
 
 ## Model comparisons (fixed part of step 05, same folds)
 | Model | CV R2 mean +/- spread | Selected lam |
 |---|---:|---:|
-| NDVI + year | 0.447 +/- 0.044 | 10 |
-| Built + year | -0.041 +/- 0.026 | 100 |
-| Full model | 0.487 +/- 0.059 | 0.1 |
+| NDVI + year | 0.430 +/- 0.024 | 10 |
+| Built + year | 0.032 +/- 0.008 | 1 |
+| Full model | 0.461 +/- 0.017 | 0.1 |
 
-NDVI + year 0.447, built + year -0.041, full 0.487; the full model gains 0.040 R2 over NDVI + year. Rule: the full-model gain is its CV R2 minus the NDVI + year CV R2; no qualitative 'dominant' label is used.
+NDVI + year 0.430, built + year 0.032, full 0.461; the full model gains 0.031 R2 over NDVI + year. Rule: the full-model gain is its CV R2 minus the NDVI + year CV R2; no qualitative 'dominant' label is used.
 
 ## Built fraction distribution
-Built fraction is zero-inflated: 30,115 cells (78.0%) are below 0.1, 2,108 (5.5%) are above 0.4, and 411 (1.1%) are above 0.5. The high-built part of the curve is sparse.
+Built fraction is zero-inflated: 95,964 cells (77.4%) are below 0.1, 6,308 (5.1%) are above 0.4, and 1,067 (0.9%) are above 0.5. The high-built part of the curve is sparse.
 
 ## Hypotheses
-H2 (nonlinearity): the fitted total effect is non-monotonic; across the NDVI lines, -2.3 to +0.2 K at built 0.00 and -2.3 to -1.3 K at built 0.50; it does not cross zero inside the plotted range. This is descriptive, not a formal test, and high-built cells are sparse. H2 (vegetation modification): not supported: only 0 of 20 built bins have non-overlapping NDVI p25/p75 95% bands; those bins hold 0.0% of unique non-water cells. Cutoffs are conventions: 'not supported' means at most 2 of 20 built bins separate; 'weak' means the separating bins together hold <5% of unique non-water cells; otherwise the result is 'supported'. A bin separates if the NDVI p25 and p75 95% bands do not overlap.
+H2 (nonlinearity): the fitted total effect is roughly flat; across the NDVI lines, -2.9 to +0.2 K at built 0.00 and -1.6 to -0.9 K at built 0.49; it does not cross zero inside the plotted range. This is descriptive, not a formal test, and high-built cells are sparse. H2 (vegetation modification): supported in bins 1 to 3: 3 of 20 built bins have non-overlapping NDVI p25/p75 95% bands, and those bins hold 73.2% of unique non-water cells. Cutoffs are conventions: 'not supported' means at most 2 of 20 built bins separate; 'weak' means the separating bins together hold <5% of unique non-water cells; otherwise the result is 'supported'. A bin separates if the NDVI p25 and p75 95% bands do not overlap.
 
 ## Caveats
 - The outcome is satellite land surface temperature, not air temperature; heatwave claims are out of scope.
@@ -67,6 +67,6 @@ H2 (nonlinearity): the fitted total effect is non-monotonic; across the NDVI lin
 - Results are associations only, not causal effects.
 
 ## Three sentences
-Done: I ran steps 01 to 06 for Chennai for 2022, 2023 and 2025, fitting the GAM on a random subsample of 10,000 cells (13,924 rows) with 5 km spatial-block cross-validation.
-Shows: Centre-class median `lst_rel` is -1.92, -0.34 and 0.02 K in 2022, 2023 and 2025; NDVI + year 0.447, built + year -0.041, full 0.487; the full model gains 0.040 R2 over NDVI + year; H2 nonlinearity: the fitted total effect is non-monotonic; across the NDVI lines, -2.3 to +0.2 K at built 0.00 and -2.3 to -1.3 K at built 0.50; it does not cross zero inside the plotted range; H2 vegetation modification: not supported: only 0 of 20 built bins have non-overlapping NDVI p25/p75 95% bands; those bins hold 0.0% of unique non-water cells.
+Done: I ran steps 01 to 06 for Chennai for 2022, 2023 and 2025, fitting the GAM on a random subsample of 10,000 cells (28,706 rows) with 5 km spatial-block cross-validation.
+Shows: Centre-class median `lst_rel` is -0.06, 0.54 and 0.04 K in 2022, 2023 and 2025; NDVI + year 0.430, built + year 0.032, full 0.461; the full model gains 0.031 R2 over NDVI + year; H2 nonlinearity: the fitted total effect is roughly flat; across the NDVI lines, -2.9 to +0.2 K at built 0.00 and -1.6 to -0.9 K at built 0.49; it does not cross zero inside the plotted range; H2 vegetation modification: supported in bins 1 to 3: 3 of 20 built bins have non-overlapping NDVI p25/p75 95% bands, and those bins hold 73.2% of unique non-water cells.
 Could be wrong: The curve is unsupported in sparse high-built bins, the GAM uses a 10,000-cell subsample and smoothing selected at the lower edge, the 95% band is conditional on that smoothing, and all results are associations, not causal effects.

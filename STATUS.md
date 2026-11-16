@@ -4,7 +4,7 @@
 |---|---|---|---|---|
 | Hyderabad | pass | written | pass | Rerun under ST_QA_MAX_K = 5 (post-hoc decision applied to all cities). Panel rows 260,715; cell retention > 99.9% each year. Summary and figures regenerated cleanly. |
 | Kolkata | pass | written | pass | Rerun under ST_QA_MAX_K = 5. Panel rows 245,686; cell retention 99.93%/99.87%/98.89%. 2025 path-138 loss drops from 24.0% to 1.37%. Total built effect rises, crossing zero near 0.40; H2 vegetation modification weak (3.4% of cells in separating bins). |
-| Chennai | pass | written | pass | Unreviewed first run (under ST_QA_MAX_K = 3). Pending rerun under ST_QA_MAX_K = 5. |
+| Chennai | pass | written | pass | Rerun under ST_QA_MAX_K = 5. Panel rows 124,047; cell retention 89.33%/99.41%/97.65%. 2022 n_obs < 3 loss dropped from 91.6% to 10.7%; 2022 centre cells restored from 21 to 9,101. Total built effect roughly flat (-2.9 to +0.2 K); built + year CV R2 positive (+0.032); H2 vegetation modification supported in bins 1-3 (73.2% of non-water cells). |
 
 Decision: ST_QA_MAX_K = 5 for ALL cities. It was chosen post-hoc after seeing a diagnostic in Chennai (the original 3 K default was an ungrounded user choice, not a Landsat specification). All cities are to be processed under 5 K without per-city tuning.
 
