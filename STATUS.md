@@ -5,6 +5,7 @@
 | Hyderabad | pass | written | pass | Rerun under ST_QA_MAX_K = 5. Summary updated under vegetation rule v2: weak or inconclusive (|z| = 0.27 <= 2; full model beats additive in 5 of 5 folds, gain +0.014). |
 | Kolkata | pass | written | pass | Rerun under ST_QA_MAX_K = 5. Summary updated under vegetation rule v2: supported (|z| = 2.38 > 2; full model beats additive in 5 of 5 folds, gain +0.037). |
 | Chennai | pass | written | pass | Rerun under ST_QA_MAX_K = 5. Summary updated under vegetation rule v2: supported (|z| = 3.94 > 2; full model beats additive in 5 of 5 folds, gain +0.021). |
+| Delhi | pass | written | pass | Rerun under ST_QA_MAX_K = 5. Summary updated under vegetation rule v3.1: not testable with this data (bin 20 fixed-NDVI coverage 0.5% < 5%; contrast +5.27 K exploratory only; full model beats additive in 4/5 folds, gain +0.007). |
 
 Decision: ST_QA_MAX_K = 5 for ALL cities. It was chosen post-hoc after seeing a diagnostic in Chennai (the original 3 K default was an ungrounded user choice, not a Landsat specification). All cities are to be processed under 5 K without per-city tuning.
 
@@ -49,8 +50,9 @@ Vegetation rule v3.1 (fixed-NDVI contrast + spatial-block bootstrap with a cover
 | Hyderabad | 0.304 / 0.416 | 52.2% | 2.0% | +3.10 | +4.86 | [+0.67, +4.31] | +0.014 | 5/5 | not testable with this data |
 | Kolkata | 0.482 / 0.591 | 46.9% | 0.0% | +1.55 | +1.94 | [-0.08, +2.23] | +0.037 | 5/5 | not testable with this data |
 | Chennai | 0.360 / 0.508 | 48.7% | 0.3% | +4.32 | +4.41 | [+1.05, +5.55] | +0.021 | 5/5 | not testable with this data |
+| Delhi | 0.244 / 0.343 | 61.6% | 0.5% | +5.27 | +9.71 | [+3.32, +6.29] | +0.007 | 4/5 | not testable with this data |
 
-- All three cities have fewer than 5% of bin-20 cells in the fixed NDVI range (Hyderabad 2.0%, Kolkata 0.0%, Chennai 0.3%); Hyderabad was not flagged in the earlier v3 report but is now covered by the same condition. The contrast is extrapolation in every city and is not a supported test of vegetation moderation.
+- All four cities with v3.1 results (Hyderabad, Kolkata, Chennai, Delhi) have fewer than 5% of bin-20 cells in the fixed NDVI range (Hyderabad 2.0%, Kolkata 0.0%, Chennai 0.3%, Delhi 0.5%). Hyderabad was not flagged in the earlier v3 report but is now covered by the same condition. The contrast is extrapolation in every city and is not a supported test of vegetation moderation.
 - Sign changed for Kolkata relative to v2 (-1.05 K) because fixed NDVI values differ from within-bin quantiles; this is the expected effect of the fix.
 
-Pending: Delhi and Bengaluru have not been run (do not run them without approval). The five-city comparison table from the five summary.md files has not been assembled. PLAN.md line 23 still lists years "2019, 2022, 2025" while config.py and the runs use 2022, 2023, 2025; this inconsistency predates this work and was not changed.
+Pending: Bengaluru has not been run (do not run it without approval). Delhi is complete (unreviewed first run). The five-city comparison table from the five summary.md files has not been assembled. PLAN.md line 23 still lists years "2019, 2022, 2025" while config.py and the runs use 2022, 2023, 2025; this inconsistency predates this work and was not changed.
