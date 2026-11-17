@@ -1,0 +1,5 @@
+metric,metric_label,linear_cv_mean,nonlinear_cv_mean,mean_gain,folds_favor_nonlinear,nl_selected_lam,lin_selected_lam,negligible_gain
+built,GHS-BUILT-S,0.031046532935414217,0.4608329112468151,0.4297863783114009,5,0.1,100.0,False
+ndbi,Landsat NDBI,0.6557612018887014,0.7072079584894215,0.05144675660072014,5,1.0,10.0,False
+dw_built,Dynamic World,0.06134071262448868,0.48009007558183986,0.41874936295735116,5,0.1,10.0,False
+wc_built,ESA WorldCover,0.02157059233487337,0.44662917904885824,0.4250585867139849,5,0.1,100.0,False

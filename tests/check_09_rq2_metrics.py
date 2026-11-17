@@ -96,8 +96,8 @@ def main():
     if not np.isfinite(ndbi).all():
         sys.exit("ndbi contains non-finite values")
     ndbi_lo, ndbi_hi = float(ndbi.min()), float(ndbi.max())
-    if ndbi_lo < -5 or ndbi_hi > 5:
-        sys.exit(f"ndbi range [{ndbi_lo:.3f}, {ndbi_hi:.3f}] outside sanity bound [-5, 5]")
+    if ndbi_lo < -1.0 or ndbi_hi > 1.0:
+        sys.exit(f"ndbi range [{ndbi_lo:.6f}, {ndbi_hi:.6f}] outside [-1.0, 1.0]")
     if not (
         (panel["built"] >= 0).all() and (panel["built"] <= 1).all()
     ):
@@ -183,7 +183,7 @@ def main():
     print(f"{city}: rq2_metrics.json valid")
     print(f"  subsample: {result['subsample_cells']} cells, {result['subsample_rows']} rows")
     print(f"  metrics rows={len(metrics_df)}, panel rows={len(panel)}")
-    print(f"  metrics bounds: dw_built/wc_built in [0,1]; ndbi finite, range [{ndbi_lo:.3f}, {ndbi_hi:.3f}]; panel built in [0,1]")
+    print(f"  metrics bounds: dw_built/wc_built in [0,1]; ndbi finite, range [{ndbi_lo:.6f}, {ndbi_hi:.6f}] within [-1.0, 1.0]; panel built in [0,1]")
     print("  Metric comparisons:")
     for metric in METRICS:
         m = metrics_result[metric]

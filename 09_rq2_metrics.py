@@ -170,13 +170,16 @@ def extract_landsat_raw(collection, x_min, y_max, cells):
         st_qa_ok = (st_qa * config.ST_QA_SCALE) <= config.ST_QA_MAX_K
 
         lst = lst_raw * config.LST_SCALE + config.LST_OFFSET
-        ndvi = (sr_b5 - sr_b4) / (sr_b5 + sr_b4)
-        swir1 = sr_b6
-        ndbi = (swir1 - sr_b5) / (swir1 + sr_b5)
+        sr_b4_s = sr_b4 * config.SR_SCALE + config.SR_OFFSET
+        sr_b5_s = sr_b5 * config.SR_SCALE + config.SR_OFFSET
+        sr_b6_s = sr_b6 * config.SR_SCALE + config.SR_OFFSET
+        ndvi = (sr_b5_s - sr_b4_s) / (sr_b5_s + sr_b4_s)
+        ndbi = (sr_b6_s - sr_b5_s) / (sr_b6_s + sr_b5_s)
+        sr_pos = (sr_b4_s > 0) & (sr_b5_s > 0) & (sr_b6_s > 0)
 
         lst = np.where(clear & st_qa_ok, lst, np.nan)
-        ndvi = np.where(clear & st_qa_ok, ndvi, np.nan)
-        ndbi = np.where(clear & st_qa_ok, ndbi, np.nan)
+        ndvi = np.where(clear & st_qa_ok & sr_pos, ndvi, np.nan)
+        ndbi = np.where(clear & st_qa_ok & sr_pos, ndbi, np.nan)
 
         lst_stack.append(lst)
         ndvi_stack.append(ndvi)
