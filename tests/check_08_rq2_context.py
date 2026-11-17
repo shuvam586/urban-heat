@@ -99,7 +99,7 @@ def main():
         if cr["context"] in contexts_seen:
             sys.exit(f"duplicate context {cr['context']}")
         contexts_seen.add(cr["context"])
-        if set(cr.keys()) - {
+        allowed_cr = {
             "context",
             "eligible",
             "n_cells",
@@ -108,8 +108,11 @@ def main():
             "built_q099",
             "median_ndvi",
             "selected_lam",
+            "n_cells_subsampled",
+            "n_rows_subsampled",
             "reason",
-        }:
+        }
+        if set(cr.keys()) - allowed_cr:
             sys.exit(f"context {cr['context']}: unexpected keys")
         if cr["eligible"]:
             for key in ("n_cells", "n_blocks", "built_q01", "built_q099", "selected_lam"):

@@ -1,0 +1,205 @@
+{
+  "city": "Delhi",
+  "subsample_cells": 10000,
+  "subsample_rows": 30000,
+  "n_folds": 5,
+  "block_size_m": 5000,
+  "lam_grid": [
+    0.1,
+    1.0,
+    10.0,
+    100.0,
+    1000.0
+  ],
+  "n_bootstrap": 200,
+  "bootstrap_seed": 42,
+  "city_median_ndvi": 0.2873318953972817,
+  "coverage": [
+    {
+      "context": "rural",
+      "n_cells": 40398,
+      "n_blocks": 301,
+      "built_q05": 0.0,
+      "built_q099": 0.17164689116147777,
+      "eligible": true
+    },
+    {
+      "context": "suburban",
+      "n_cells": 16831,
+      "n_blocks": 277,
+      "built_q05": 0.0,
+      "built_q099": 0.3642163602701838,
+      "eligible": true
+    },
+    {
+      "context": "semi-dense",
+      "n_cells": 869,
+      "n_blocks": 61,
+      "built_q05": 0.0,
+      "built_q099": 0.4569659917005037,
+      "eligible": true
+    },
+    {
+      "context": "dense",
+      "n_cells": 3304,
+      "n_blocks": 150,
+      "built_q05": 0.0,
+      "built_q099": 0.5026226467466152,
+      "eligible": true
+    },
+    {
+      "context": "centre",
+      "n_cells": 25865,
+      "n_blocks": 162,
+      "built_q05": 0.0,
+      "built_q099": 0.6602843004930824,
+      "eligible": true
+    }
+  ],
+  "context_results": [
+    {
+      "context": "rural",
+      "eligible": true,
+      "n_cells": 40398,
+      "n_blocks": 301,
+      "built_q01": 0.0,
+      "built_q099": 0.17164689116147777,
+      "median_ndvi": 0.2873318953972817,
+      "selected_lam": 1.0,
+      "n_cells_subsampled": 10000,
+      "n_rows_subsampled": 30000
+    },
+    {
+      "context": "suburban",
+      "eligible": true,
+      "n_cells": 16831,
+      "n_blocks": 277,
+      "built_q01": 0.0,
+      "built_q099": 0.3642163602701838,
+      "median_ndvi": 0.2873318953972817,
+      "selected_lam": 0.1,
+      "n_cells_subsampled": 10000,
+      "n_rows_subsampled": 30000
+    },
+    {
+      "context": "semi-dense",
+      "eligible": true,
+      "n_cells": 869,
+      "n_blocks": 61,
+      "built_q01": 0.0,
+      "built_q099": 0.4569659917005037,
+      "median_ndvi": 0.2873318953972817,
+      "selected_lam": 10.0,
+      "n_cells_subsampled": 869,
+      "n_rows_subsampled": 2607
+    },
+    {
+      "context": "dense",
+      "eligible": true,
+      "n_cells": 3304,
+      "n_blocks": 150,
+      "built_q01": 0.0,
+      "built_q099": 0.5026226467466152,
+      "median_ndvi": 0.2873318953972817,
+      "selected_lam": 1.0,
+      "n_cells_subsampled": 3304,
+      "n_rows_subsampled": 9912
+    },
+    {
+      "context": "centre",
+      "eligible": true,
+      "n_cells": 25865,
+      "n_blocks": 162,
+      "built_q01": 0.0,
+      "built_q099": 0.6602843004930824,
+      "median_ndvi": 0.2873318953972817,
+      "selected_lam": 0.1,
+      "n_cells_subsampled": 10000,
+      "n_rows_subsampled": 30000
+    }
+  ],
+  "part_b": {
+    "model_nonlinear": "s(built) + s(ndvi) + f(year)",
+    "model_linear": "built + s(ndvi) + f(year)",
+    "nl_selected_lam": 0.1,
+    "lin_selected_lam": 10.0,
+    "nl_fold_scores": [
+      0.34754627417183903,
+      0.31967841469205194,
+      0.3414653781088465,
+      0.35101562560482924,
+      0.38935436473699947
+    ],
+    "lin_fold_scores": [
+      0.3749534179400428,
+      0.3184912595714565,
+      0.3336814340828219,
+      0.3422974823592563,
+      0.39099594205877153
+    ],
+    "fold_differences": [
+      -0.027407143768203746,
+      0.0011871551205954178,
+      0.0077839440260245585,
+      0.008718143245572962,
+      -0.0016415773217720586
+    ],
+    "mean_gain": -0.002271895739556573,
+    "folds_favour_nonlinear": 3,
+    "negligible_gain": true,
+    "derivative_zero_crossings": [
+      {
+        "type": "max",
+        "built": 0.02795868477964978
+      },
+      {
+        "type": "min",
+        "built": 0.061742095555059925
+      },
+      {
+        "type": "max",
+        "built": 0.09319561593216592
+      },
+      {
+        "type": "min",
+        "built": 0.15144287588976962
+      },
+      {
+        "type": "max",
+        "built": 0.17707167027111526
+      },
+      {
+        "type": "min",
+        "built": 0.26211266980921666
+      },
+      {
+        "type": "max",
+        "built": 0.30405069697869136
+      },
+      {
+        "type": "min",
+        "built": 0.48694709324556695
+      },
+      {
+        "type": "max",
+        "built": 0.5137408328260646
+      },
+      {
+        "type": "min",
+        "built": 0.5603386407921477
+      }
+    ],
+    "subsample_cells": 10000,
+    "subsample_rows": 30000
+  },
+  "overlap_all": {
+    "q01": 0.0,
+    "q099": 0.17164689116147777,
+    "n_contexts": 5
+  },
+  "overlap_urban": {
+    "q01": 0.0,
+    "q099": 0.3642163602701838,
+    "n_contexts": 4
+  }
+}

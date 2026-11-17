@@ -1,0 +1,173 @@
+{
+  "city": "Bengaluru",
+  "subsample_cells": 10000,
+  "subsample_rows": 29959,
+  "n_folds": 5,
+  "block_size_m": 5000,
+  "lam_grid": [
+    0.1,
+    1.0,
+    10.0,
+    100.0,
+    1000.0
+  ],
+  "n_bootstrap": 200,
+  "bootstrap_seed": 42,
+  "city_median_ndvi": 0.3991856046595793,
+  "coverage": [
+    {
+      "context": "rural",
+      "n_cells": 49267,
+      "n_blocks": 328,
+      "built_q05": 0.0,
+      "built_q099": 0.18265955313611112,
+      "eligible": true
+    },
+    {
+      "context": "suburban",
+      "n_cells": 24526,
+      "n_blocks": 277,
+      "built_q05": 0.0,
+      "built_q099": 0.2550194848428413,
+      "eligible": true
+    },
+    {
+      "context": "semi-dense",
+      "n_cells": 632,
+      "n_blocks": 39,
+      "built_q05": 0.0,
+      "built_q099": 0.37442283318288494,
+      "eligible": true
+    },
+    {
+      "context": "dense",
+      "n_cells": 1230,
+      "n_blocks": 44,
+      "built_q05": 0.0,
+      "built_q099": 0.47798294124871743,
+      "eligible": true
+    },
+    {
+      "context": "centre",
+      "n_cells": 11470,
+      "n_blocks": 87,
+      "built_q05": 9.959927166229592e-07,
+      "built_q099": 0.6125083144424033,
+      "eligible": true
+    }
+  ],
+  "context_results": [
+    {
+      "context": "rural",
+      "eligible": true,
+      "n_cells": 49267,
+      "n_blocks": 328,
+      "built_q01": 0.0,
+      "built_q099": 0.18265955313611112,
+      "median_ndvi": 0.3991856046595793,
+      "selected_lam": 1.0,
+      "n_cells_subsampled": 10000,
+      "n_rows_subsampled": 29978
+    },
+    {
+      "context": "suburban",
+      "eligible": true,
+      "n_cells": 24526,
+      "n_blocks": 277,
+      "built_q01": 0.0,
+      "built_q099": 0.2550194848428413,
+      "median_ndvi": 0.3991856046595793,
+      "selected_lam": 1.0,
+      "n_cells_subsampled": 10000,
+      "n_rows_subsampled": 29947
+    },
+    {
+      "context": "semi-dense",
+      "eligible": true,
+      "n_cells": 632,
+      "n_blocks": 39,
+      "built_q01": 0.0,
+      "built_q099": 0.37442283318288494,
+      "median_ndvi": 0.3991856046595793,
+      "selected_lam": 0.1,
+      "n_cells_subsampled": 632,
+      "n_rows_subsampled": 1893
+    },
+    {
+      "context": "dense",
+      "eligible": true,
+      "n_cells": 1230,
+      "n_blocks": 44,
+      "built_q01": 0.0,
+      "built_q099": 0.47798294124871743,
+      "median_ndvi": 0.3991856046595793,
+      "selected_lam": 0.1,
+      "n_cells_subsampled": 1230,
+      "n_rows_subsampled": 3681
+    },
+    {
+      "context": "centre",
+      "eligible": true,
+      "n_cells": 11470,
+      "n_blocks": 87,
+      "built_q01": 9.959927166229592e-07,
+      "built_q099": 0.6125083144424033,
+      "median_ndvi": 0.3991856046595793,
+      "selected_lam": 0.1,
+      "n_cells_subsampled": 10000,
+      "n_rows_subsampled": 29879
+    }
+  ],
+  "part_b": {
+    "model_nonlinear": "s(built) + s(ndvi) + f(year)",
+    "model_linear": "built + s(ndvi) + f(year)",
+    "nl_selected_lam": 10.0,
+    "lin_selected_lam": 10.0,
+    "nl_fold_scores": [
+      0.5406050063392972,
+      0.5476038304718587,
+      0.5608859271066999,
+      0.5668107625895933,
+      0.4815727098321356
+    ],
+    "lin_fold_scores": [
+      0.54037759413271,
+      0.5472775407934656,
+      0.5606606380060416,
+      0.566935096182843,
+      0.4813202056506326
+    ],
+    "fold_differences": [
+      0.0002274122065871742,
+      0.0003262896783930991,
+      0.0002252891006583324,
+      -0.0001243335932497036,
+      0.00025250418150302156
+    ],
+    "mean_gain": 0.00018143231477838473,
+    "folds_favour_nonlinear": 4,
+    "negligible_gain": true,
+    "derivative_zero_crossings": [
+      {
+        "type": "max",
+        "built": 0.014111050124675017
+      },
+      {
+        "type": "min",
+        "built": 0.49590261866715063
+      }
+    ],
+    "subsample_cells": 10000,
+    "subsample_rows": 29959
+  },
+  "overlap_all": {
+    "q01": 9.959927166229592e-07,
+    "q099": 0.18265955313611112,
+    "n_contexts": 5
+  },
+  "overlap_urban": {
+    "q01": 9.959927166229592e-07,
+    "q099": 0.2550194848428413,
+    "n_contexts": 4
+  }
+}

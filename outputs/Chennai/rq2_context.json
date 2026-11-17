@@ -1,0 +1,174 @@
+{
+  "city": "Chennai",
+  "subsample_cells": 10000,
+  "subsample_rows": 28706,
+  "n_folds": 5,
+  "block_size_m": 5000,
+  "lam_grid": [
+    0.1,
+    1.0,
+    10.0,
+    100.0,
+    1000.0
+  ],
+  "n_bootstrap": 200,
+  "bootstrap_seed": 42,
+  "city_median_ndvi": 0.4335495666346121,
+  "coverage": [
+    {
+      "context": "rural",
+      "n_cells": 20504,
+      "n_blocks": 162,
+      "built_q05": 0.0,
+      "built_q099": 0.10368931607365428,
+      "eligible": true
+    },
+    {
+      "context": "suburban",
+      "n_cells": 9821,
+      "n_blocks": 141,
+      "built_q05": 0.0,
+      "built_q099": 0.24820833334223436,
+      "eligible": true
+    },
+    {
+      "context": "semi-dense",
+      "n_cells": 421,
+      "n_blocks": 23,
+      "built_q05": 0.0,
+      "built_q099": 0.3426202115269465,
+      "eligible": false
+    },
+    {
+      "context": "dense",
+      "n_cells": 1438,
+      "n_blocks": 60,
+      "built_q05": 0.0,
+      "built_q099": 0.45486050207573,
+      "eligible": true
+    },
+    {
+      "context": "centre",
+      "n_cells": 11013,
+      "n_blocks": 74,
+      "built_q05": 0.0,
+      "built_q099": 0.5335623840479132,
+      "eligible": true
+    }
+  ],
+  "context_results": [
+    {
+      "context": "rural",
+      "eligible": true,
+      "n_cells": 20504,
+      "n_blocks": 162,
+      "built_q01": 0.0,
+      "built_q099": 0.10368931607365428,
+      "median_ndvi": 0.4335495666346121,
+      "selected_lam": 1.0,
+      "n_cells_subsampled": 10000,
+      "n_rows_subsampled": 28964
+    },
+    {
+      "context": "suburban",
+      "eligible": true,
+      "n_cells": 9821,
+      "n_blocks": 141,
+      "built_q01": 0.0,
+      "built_q099": 0.24820833334223436,
+      "median_ndvi": 0.4335495666346121,
+      "selected_lam": 1.0,
+      "n_cells_subsampled": 9821,
+      "n_rows_subsampled": 28366
+    },
+    {
+      "context": "semi-dense",
+      "eligible": false,
+      "reason": "cells=421 blocks=23"
+    },
+    {
+      "context": "dense",
+      "eligible": true,
+      "n_cells": 1438,
+      "n_blocks": 60,
+      "built_q01": 0.0,
+      "built_q099": 0.45486050207573,
+      "median_ndvi": 0.4335495666346121,
+      "selected_lam": 0.1,
+      "n_cells_subsampled": 1438,
+      "n_rows_subsampled": 4171
+    },
+    {
+      "context": "centre",
+      "eligible": true,
+      "n_cells": 11013,
+      "n_blocks": 74,
+      "built_q01": 0.0,
+      "built_q099": 0.5335623840479132,
+      "median_ndvi": 0.4335495666346121,
+      "selected_lam": 0.1,
+      "n_cells_subsampled": 10000,
+      "n_rows_subsampled": 28024
+    }
+  ],
+  "part_b": {
+    "model_nonlinear": "s(built) + s(ndvi) + f(year)",
+    "model_linear": "built + s(ndvi) + f(year)",
+    "nl_selected_lam": 1.0,
+    "lin_selected_lam": 10.0,
+    "nl_fold_scores": [
+      0.4416180552069757,
+      0.4541309148858601,
+      0.39040569530477676,
+      0.4476552965874324,
+      0.4639904587253608
+    ],
+    "lin_fold_scores": [
+      0.4433408203688721,
+      0.4537592211244492,
+      0.3905664031013284,
+      0.44646774066437855,
+      0.4637378852146983
+    ],
+    "fold_differences": [
+      -0.0017227651618964002,
+      0.00037169376141088506,
+      -0.00016070779655164014,
+      0.0011875559230538624,
+      0.00025257351066254596
+    ],
+    "mean_gain": -1.4329952664149381e-05,
+    "folds_favour_nonlinear": 3,
+    "negligible_gain": true,
+    "derivative_zero_crossings": [
+      {
+        "type": "max",
+        "built": 0.020807234864680724
+      },
+      {
+        "type": "min",
+        "built": 0.31409016438589477
+      },
+      {
+        "type": "max",
+        "built": 0.3814659725191466
+      },
+      {
+        "type": "min",
+        "built": 0.4547867048994501
+      }
+    ],
+    "subsample_cells": 10000,
+    "subsample_rows": 28706
+  },
+  "overlap_all": {
+    "q01": 0.0,
+    "q099": 0.10368931607365428,
+    "n_contexts": 4
+  },
+  "overlap_urban": {
+    "q01": 0.0,
+    "q099": 0.24820833334223436,
+    "n_contexts": 3
+  }
+}

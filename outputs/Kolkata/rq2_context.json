@@ -1,0 +1,169 @@
+{
+  "city": "Kolkata",
+  "subsample_cells": 10000,
+  "subsample_rows": 29889,
+  "n_folds": 5,
+  "block_size_m": 5000,
+  "lam_grid": [
+    0.1,
+    1.0,
+    10.0,
+    100.0,
+    1000.0
+  ],
+  "n_bootstrap": 200,
+  "bootstrap_seed": 42,
+  "city_median_ndvi": 0.5430233226750871,
+  "coverage": [
+    {
+      "context": "rural",
+      "n_cells": 13339,
+      "n_blocks": 262,
+      "built_q05": 0.0,
+      "built_q099": 0.10119535893780514,
+      "eligible": true
+    },
+    {
+      "context": "suburban",
+      "n_cells": 27780,
+      "n_blocks": 305,
+      "built_q05": 0.0,
+      "built_q099": 0.17597306405219232,
+      "eligible": true
+    },
+    {
+      "context": "semi-dense",
+      "n_cells": 1380,
+      "n_blocks": 50,
+      "built_q05": 0.0,
+      "built_q099": 0.17362386162032933,
+      "eligible": true
+    },
+    {
+      "context": "dense",
+      "n_cells": 4369,
+      "n_blocks": 140,
+      "built_q05": 0.0,
+      "built_q099": 0.25143851407084544,
+      "eligible": true
+    },
+    {
+      "context": "centre",
+      "n_cells": 35365,
+      "n_blocks": 259,
+      "built_q05": 0.0,
+      "built_q099": 0.5229841739957898,
+      "eligible": true
+    }
+  ],
+  "context_results": [
+    {
+      "context": "rural",
+      "eligible": true,
+      "n_cells": 13339,
+      "n_blocks": 262,
+      "built_q01": 0.0,
+      "built_q099": 0.10119535893780514,
+      "median_ndvi": 0.5430233226750871,
+      "selected_lam": 1.0,
+      "n_cells_subsampled": 10000,
+      "n_rows_subsampled": 29755
+    },
+    {
+      "context": "suburban",
+      "eligible": true,
+      "n_cells": 27780,
+      "n_blocks": 305,
+      "built_q01": 0.0,
+      "built_q099": 0.17597306405219232,
+      "median_ndvi": 0.5430233226750871,
+      "selected_lam": 0.1,
+      "n_cells_subsampled": 10000,
+      "n_rows_subsampled": 29893
+    },
+    {
+      "context": "semi-dense",
+      "eligible": true,
+      "n_cells": 1380,
+      "n_blocks": 50,
+      "built_q01": 0.0,
+      "built_q099": 0.17362386162032933,
+      "median_ndvi": 0.5430233226750871,
+      "selected_lam": 100.0,
+      "n_cells_subsampled": 1380,
+      "n_rows_subsampled": 4100
+    },
+    {
+      "context": "dense",
+      "eligible": true,
+      "n_cells": 4369,
+      "n_blocks": 140,
+      "built_q01": 0.0,
+      "built_q099": 0.25143851407084544,
+      "median_ndvi": 0.5430233226750871,
+      "selected_lam": 10.0,
+      "n_cells_subsampled": 4369,
+      "n_rows_subsampled": 13048
+    },
+    {
+      "context": "centre",
+      "eligible": true,
+      "n_cells": 35365,
+      "n_blocks": 259,
+      "built_q01": 0.0,
+      "built_q099": 0.5229841739957898,
+      "median_ndvi": 0.5430233226750871,
+      "selected_lam": 10.0,
+      "n_cells_subsampled": 10000,
+      "n_rows_subsampled": 29931
+    }
+  ],
+  "part_b": {
+    "model_nonlinear": "s(built) + s(ndvi) + f(year)",
+    "model_linear": "built + s(ndvi) + f(year)",
+    "nl_selected_lam": 10.0,
+    "lin_selected_lam": 10.0,
+    "nl_fold_scores": [
+      0.45504015545235665,
+      0.41583713297189484,
+      0.4435296835498551,
+      0.3870063635804979,
+      0.41587237959589507
+    ],
+    "lin_fold_scores": [
+      0.4545542685086744,
+      0.41594657836609805,
+      0.44336225578143307,
+      0.386841502300017,
+      0.4156674328659036
+    ],
+    "fold_differences": [
+      0.0004858869436822344,
+      -0.00010944539420321142,
+      0.00016742776842204599,
+      0.0001648612804808769,
+      0.00020494672999149532
+    ],
+    "mean_gain": 0.00018273546567468824,
+    "folds_favour_nonlinear": 4,
+    "negligible_gain": true,
+    "derivative_zero_crossings": [
+      {
+        "type": "min",
+        "built": 0.0166106312916644
+      }
+    ],
+    "subsample_cells": 10000,
+    "subsample_rows": 29889
+  },
+  "overlap_all": {
+    "q01": 0.0,
+    "q099": 0.10119535893780514,
+    "n_contexts": 5
+  },
+  "overlap_urban": {
+    "q01": 0.0,
+    "q099": 0.17362386162032933,
+    "n_contexts": 4
+  }
+}

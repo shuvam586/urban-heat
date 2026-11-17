@@ -1,5 +1,6 @@
 import argparse
 import json
+import time
 from pathlib import Path
 
 import matplotlib
@@ -12,6 +13,8 @@ import pandas as pd
 from pygam import LinearGAM, f, s
 from sklearn.metrics import r2_score
 from sklearn.model_selection import GroupKFold
+from scipy.sparse import block_diag
+from scipy.sparse.linalg import splu
 
 import config
 
@@ -23,7 +26,6 @@ BOOTSTRAP_SEED = 42
 MIN_CELLS = 500
 MIN_BLOCKS = 30
 N_EVAL_POINTS = 50
-Z95 = 1.959963984540054
 
 CLASS_ORDER = ["rural", "suburban", "semi-dense", "dense", "centre"]
 CLASS_MAP = {11: 0, 12: 0, 13: 0, 21: 1, 22: 2, 23: 3, 30: 4}
@@ -34,6 +36,7 @@ CLASS_LABELS = {
     3: "dense",
     4: "centre",
 }
+URBAN_CONTEXTS = ["suburban", "semi-dense", "dense", "centre"]
 
 
 def block_key_from_xy(x, y):
@@ -45,20 +48,17 @@ def block_key_from_xy(x, y):
     return pd.factorize(key)[0]
 
 
-def subsample_panel(panel, seed=SEED, max_cells=SUBSAMPLE_CELLS):
-    """Reproduce the exact step-05 subsample: 10,000 cells, all rows for them."""
-    cell_ids = panel["grid_id"].unique()
+def subsample_cells_in_context(ctx_df, seed=SEED, max_cells=SUBSAMPLE_CELLS):
+    cell_ids = ctx_df["grid_id"].unique()
     rng = np.random.default_rng(seed)
     if len(cell_ids) > max_cells:
-        sampled_cells = rng.choice(cell_ids, size=max_cells, replace=False)
+        sampled = rng.choice(cell_ids, size=max_cells, replace=False)
     else:
-        sampled_cells = cell_ids
-    sub = panel[panel["grid_id"].isin(sampled_cells)].copy()
-    return sub, sampled_cells
+        sampled = cell_ids
+    return ctx_df[ctx_df["grid_id"].isin(sampled)].copy()
 
 
 def make_folds(sub, n_folds=config.CV_FOLDS):
-    """Reproduce the exact step-05 5 km GroupKFold splits on the subsample."""
     X = sub[["built", "ndvi", "year_code"]].to_numpy(dtype=float)
     y = sub["lst_rel"].to_numpy(dtype=float)
     groups = block_key_from_xy(sub["x"].to_numpy(), sub["y"].to_numpy())
@@ -89,23 +89,13 @@ def flat_lam(lam):
     return flatten_lam(lam)[0]
 
 
-def partial_dependence_1d(gam, term_index, X_eval):
-    """Return 1-D partial dependence values for a single term."""
-    s_effect = gam.partial_dependence(term=term_index, X=X_eval)
-    return np.asarray(s_effect).ravel()
-
-
 def derivative_zero_crossings(gam, x_min, x_max, n_points=500):
-    """Find local extrema (first-derivative zero crossings) of s(built)."""
     xs = np.linspace(x_min, x_max, n_points)
-    # ndvi = 0 (arbitrary reference, additive model), year = 0
     X_eval = np.column_stack([xs, np.zeros(n_points), np.zeros(n_points)])
-    # Use finite differences on the partial dependence of term 0
-    pd_vals = partial_dependence_1d(gam, 0, X_eval)
-    # First derivative via central difference
+    pd_vals = gam.partial_dependence(term=0, X=X_eval)
+    pd_vals = np.asarray(pd_vals).ravel()
     dx = xs[1] - xs[0]
     deriv = np.gradient(pd_vals, dx)
-    # Second derivative to classify extrema
     second = np.gradient(deriv, dx)
     crossings = []
     for i in range(1, len(deriv) - 1):
@@ -116,19 +106,54 @@ def derivative_zero_crossings(gam, x_min, x_max, n_points=500):
     return crossings
 
 
-def bootstrap_predictions(gam_terms, X, y, groups, X_eval, lam, n_draws, seed):
-    """200-draw 5 km block bootstrap: resample blocks, refit, predict."""
+def bootstrap_predictions_fast(gam, X_ctx, y_ctx, groups_ctx, X_eval,
+                               n_draws, seed, label=""):
+    """Fast block-bootstrap using precomputed design matrix.
+
+    Fits GAM once to get design matrix Z and combined penalty P_total.
+    Each bootstrap draw resamples blocks, then solves the penalized
+    least squares system directly: coef = (Z_draw' Z_draw + P_total)^-1 Z_draw' y_draw.
+    """
     rng = np.random.default_rng(seed)
-    unique_blocks = np.unique(groups)
+    unique_blocks = np.unique(groups_ctx)
     n_blocks = len(unique_blocks)
-    block_to_idx = {b: np.where(groups == b)[0] for b in unique_blocks}
+    block_to_idx = {b: np.where(groups_ctx == b)[0] for b in unique_blocks}
+
+    # Full design matrix (N x K) and eval matrix (N_eval x K)
+    Z = gam._modelmat(X_ctx)
+    Z_eval = gam._modelmat(X_eval)
+    n_coefs = gam.coef_.shape[0]
+
+    # Combined penalty matrix: block-diagonal of lam_j * P_j per term
+    penalty_blocks = []
+    offset = 0
+    for j, term in enumerate(gam.terms):
+        n_j = term.n_coefs
+        P_j = term.build_penalties()
+        if hasattr(P_j, "toarray"):
+            P_j = P_j.toarray()
+        P_j = np.asarray(P_j, dtype=float)
+        term_lam_vals = flatten_lam(term.lam) if term.lam is not None else [0.0]
+        term_lam = term_lam_vals[0] if term_lam_vals else 0.0
+        penalty_blocks.append(term_lam * P_j)
+        offset += n_j
+    P_total = block_diag(penalty_blocks).toarray()
+
     draws = np.full((n_draws, len(X_eval)), np.nan)
+    t0 = time.time()
     for draw in range(n_draws):
         drawn = rng.choice(unique_blocks, size=n_blocks, replace=True)
         train_idx = np.concatenate([block_to_idx[b] for b in drawn])
-        fold = LinearGAM(gam_terms, lam=lam)
-        fold.fit(X[train_idx], y[train_idx])
-        draws[draw, :] = fold.predict(X_eval)
+        Z_draw = Z[train_idx, :]
+        y_draw = y_ctx[train_idx]
+        A = Z_draw.T @ Z_draw + P_total
+        b_vec = Z_draw.T @ y_draw
+        coef_draw = np.linalg.solve(A, b_vec)
+        draws[draw, :] = Z_eval @ coef_draw
+        if (draw + 1) % 50 == 0:
+            elapsed = time.time() - t0
+            print(f"    {label} bootstrap draw {draw + 1}/{n_draws} "
+                  f"({elapsed:.1f}s elapsed)")
     lower = np.percentile(draws, 2.5, axis=0)
     upper = np.percentile(draws, 97.5, axis=0)
     return lower, upper
@@ -144,36 +169,29 @@ def main():
     output_dir = Path("outputs") / city
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # --- Exact step-05 subsample and folds ---
-    sub, sampled_cells = subsample_panel(panel, seed=SEED)
-    year_levels = sorted(int(year) for year in sub["year"].unique())
-    sub["year_code"] = sub["year"].map(
+    year_levels = sorted(int(year) for year in panel["year"].unique())
+    panel["year_code"] = panel["year"].map(
         {year: code for code, year in enumerate(year_levels)}
     )
-    X = sub[["built", "ndvi", "year_code"]].to_numpy(dtype=float)
-    y = sub["lst_rel"].to_numpy(dtype=float)
-    groups = block_key_from_xy(sub["x"].to_numpy(), sub["y"].to_numpy())
-    splits = make_folds(sub, n_folds=config.CV_FOLDS)
-
+    year_2022_code = year_levels.index(2022) if 2022 in year_levels else 0
     city_median_ndvi = float(panel["ndvi"].median())
 
     # ===== Part A: Within-context smooths (H6) =====
-    sub["class_group"] = sub["ladder_class"].map(CLASS_MAP)
-
     coverage = []
     context_results = []
     csv_rows = []
 
     for code in range(len(CLASS_ORDER)):
         label = CLASS_LABELS[code]
-        ctx_sub = sub[sub["class_group"] == code].copy()
-        n_cells = int(ctx_sub["grid_id"].nunique())
+        ctx_full = panel[panel["ladder_class"].map(CLASS_MAP) == code].copy()
+        n_cells = int(ctx_full["grid_id"].nunique())
         ctx_blocks = block_key_from_xy(
-            ctx_sub["x"].to_numpy(), ctx_sub["y"].to_numpy()
+            ctx_full["x"].to_numpy(), ctx_full["y"].to_numpy()
         )
         n_blocks = int(len(np.unique(ctx_blocks)))
-        q01 = float(ctx_sub["built"].quantile(0.01))
-        q99 = float(ctx_sub["built"].quantile(0.99))
+        q01 = float(ctx_full["built"].quantile(0.01))
+        q99 = float(ctx_full["built"].quantile(0.99))
+        eligible = bool(n_cells >= MIN_CELLS and n_blocks >= MIN_BLOCKS)
 
         coverage.append(
             {
@@ -182,11 +200,11 @@ def main():
                 "n_blocks": n_blocks,
                 "built_q05": q01,
                 "built_q099": q99,
-                "eligible": bool(n_cells >= MIN_CELLS and n_blocks >= MIN_BLOCKS),
+                "eligible": eligible,
             }
         )
 
-        if n_cells < MIN_CELLS or n_blocks < MIN_BLOCKS:
+        if not eligible:
             context_results.append(
                 {
                     "context": label,
@@ -196,7 +214,10 @@ def main():
             )
             continue
 
-        # Fit within-context GAM: lst_rel ~ s(built) + s(ndvi) + f(year)
+        ctx_sub = subsample_cells_in_context(ctx_full, seed=SEED)
+        ctx_sub["year_code"] = ctx_sub["year"].map(
+            {year: code2 for code2, year in enumerate(year_levels)}
+        )
         X_ctx = ctx_sub[["built", "ndvi", "year_code"]].to_numpy(dtype=float)
         y_ctx = ctx_sub["lst_rel"].to_numpy(dtype=float)
         groups_ctx = block_key_from_xy(
@@ -207,8 +228,6 @@ def main():
         gam.gridsearch(X_ctx, y_ctx, lam=LAM_GRID, progress=False)
         selected_lam = flat_lam(gam.lam)
 
-        # Evaluation grid: built from q01 to q99, ndvi = city median, year = 2022 (code 0)
-        year_2022_code = year_levels.index(2022) if 2022 in year_levels else 0
         built_eval = np.linspace(q01, q99, N_EVAL_POINTS)
         X_eval = np.column_stack(
             [
@@ -218,22 +237,19 @@ def main():
             ]
         )
 
-        # Point predictions
         gam_full = LinearGAM(s(0) + s(1) + f(2), lam=selected_lam)
         gam_full.fit(X_ctx, y_ctx)
         pred = gam_full.predict(X_eval)
 
-        # Bootstrap CIs — pass the full lam array (one per term) as selected by gridsearch
-        groups_eval_ctx = groups_ctx
-        ci_low, ci_high = bootstrap_predictions(
-            s(0) + s(1) + f(2),
+        ci_low, ci_high = bootstrap_predictions_fast(
+            gam_full,
             X_ctx,
             y_ctx,
-            groups_eval_ctx,
+            groups_ctx,
             X_eval,
-            gam.lam,
             N_BOOTSTRAP,
             BOOTSTRAP_SEED,
+            label=label,
         )
 
         context_results.append(
@@ -246,6 +262,8 @@ def main():
                 "built_q099": q99,
                 "median_ndvi": city_median_ndvi,
                 "selected_lam": selected_lam,
+                "n_cells_subsampled": int(ctx_sub["grid_id"].nunique()),
+                "n_rows_subsampled": int(len(ctx_sub)),
             }
         )
 
@@ -262,20 +280,35 @@ def main():
                 }
             )
 
-    # ===== Part B: Formal nonlinearity check (H2) =====
-    # Same subsample, same folds as step 05
-    # Linear: built + s(ndvi) + f(year)
-    # Nonlinear: s(built) + s(ndvi) + f(year)
+    # Overlap ranges
+    eligible_contexts = [c for c in context_results if c["eligible"]]
+    all_q01 = max(c["built_q01"] for c in eligible_contexts)
+    all_q099 = min(c["built_q099"] for c in eligible_contexts)
+    urban_contexts = [c for c in eligible_contexts if c["context"] in URBAN_CONTEXTS]
+    urban_q01 = max(c["built_q01"] for c in urban_contexts) if urban_contexts else None
+    urban_q099 = min(c["built_q099"] for c in urban_contexts) if urban_contexts else None
 
-    linear_terms = X  # built is column 0, used linearly via s(0) with many basis? No — use linear term
-    # In pygam, a linear term is just s(0, n_splines=1, order=1) or we can pass the raw column
-    # pygam LinearGAM expects smooth terms; for a purely linear term use s(0, order=1)
+    # ===== Part B: Formal nonlinearity check (H2) =====
+    cell_ids = panel["grid_id"].unique()
+    rng = np.random.default_rng(SEED)
+    if len(cell_ids) > SUBSAMPLE_CELLS:
+        sampled_cells = rng.choice(cell_ids, size=SUBSAMPLE_CELLS, replace=False)
+    else:
+        sampled_cells = cell_ids
+    sub = panel[panel["grid_id"].isin(sampled_cells)].copy()
+    sub["year_code"] = sub["year"].map(
+        {year: code for code, year in enumerate(year_levels)}
+    )
+    X = sub[["built", "ndvi", "year_code"]].to_numpy(dtype=float)
+    y = sub["lst_rel"].to_numpy(dtype=float)
+    groups = block_key_from_xy(sub["x"].to_numpy(), sub["y"].to_numpy())
+    splits = make_folds(sub, n_folds=config.CV_FOLDS)
+
     from pygam import s as _s
 
     linear_terms_pygam = _s(0, spline_order=1) + _s(1) + f(2)
     nonlinear_terms_pygam = _s(0) + _s(1) + f(2)
 
-    # Gridsearch lam for each on the full subsample
     linear_gam = LinearGAM(linear_terms_pygam)
     linear_gam.gridsearch(X, y, lam=LAM_GRID, progress=False)
     linear_lam = flat_lam(linear_gam.lam)
@@ -294,7 +327,6 @@ def main():
     folds_favour_nonlinear = int(sum(1 for d in fold_differences if d > 0))
     negligible_gain = bool(mean_gain < 0.005)
 
-    # Derivative zero crossings of s(built) from nonlinear model
     q01_all, q99_all = float(panel["built"].quantile(0.01)), float(
         panel["built"].quantile(0.99)
     )
@@ -314,6 +346,8 @@ def main():
         "folds_favour_nonlinear": folds_favour_nonlinear,
         "negligible_gain": negligible_gain,
         "derivative_zero_crossings": zero_crossings,
+        "subsample_cells": int(sub["grid_id"].nunique()),
+        "subsample_rows": int(len(sub)),
     }
 
     # ===== Save outputs =====
@@ -333,11 +367,21 @@ def main():
         "coverage": coverage,
         "context_results": context_results,
         "part_b": part_b,
+        "overlap_all": {
+            "q01": float(all_q01),
+            "q099": float(all_q099),
+            "n_contexts": len(eligible_contexts),
+        },
+        "overlap_urban": {
+            "q01": float(urban_q01) if urban_q01 is not None else None,
+            "q099": float(urban_q099) if urban_q099 is not None else None,
+            "n_contexts": len(urban_contexts),
+        },
     }
     with open(output_dir / "rq2_context.json", "w") as handle:
         json.dump(result, handle, indent=2)
 
-    # Figure 5: class-specific partial built-up curves
+    # Figure 5
     fig, ax = plt.subplots(figsize=(9, 5))
     colors = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd"]
     for i, cr in enumerate(context_results):
@@ -388,6 +432,8 @@ def main():
             f"built[{c['built_q05']:.3f},{c['built_q099']:.3f}], "
             f"eligible={c['eligible']}"
         )
+    print("  overlap_all:", result["overlap_all"])
+    print("  overlap_urban:", result["overlap_urban"])
     print("Part B:")
     print(
         f"  nonlinear lam={nonlinear_lam}, linear lam={linear_lam}"

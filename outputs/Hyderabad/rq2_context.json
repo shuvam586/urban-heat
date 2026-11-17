@@ -17,42 +17,42 @@
   "coverage": [
     {
       "context": "rural",
-      "n_cells": 7032,
-      "n_blocks": 320,
+      "n_cells": 61624,
+      "n_blocks": 331,
       "built_q05": 0.0,
-      "built_q099": 0.11443163615450203,
+      "built_q099": 0.11240170585208152,
       "eligible": true
     },
     {
       "context": "suburban",
-      "n_cells": 1564,
-      "n_blocks": 208,
+      "n_cells": 13433,
+      "n_blocks": 230,
       "built_q05": 0.0,
-      "built_q099": 0.2675040429371697,
+      "built_q099": 0.2710501050197312,
       "eligible": true
     },
     {
       "context": "semi-dense",
-      "n_cells": 107,
-      "n_blocks": 39,
+      "n_cells": 832,
+      "n_blocks": 50,
       "built_q05": 0.0,
-      "built_q099": 0.3467945430172633,
-      "eligible": false
+      "built_q099": 0.33599973614772205,
+      "eligible": true
     },
     {
       "context": "dense",
-      "n_cells": 152,
-      "n_blocks": 45,
+      "n_cells": 1316,
+      "n_blocks": 66,
       "built_q05": 0.0,
-      "built_q099": 0.4867290409326316,
-      "eligible": false
+      "built_q099": 0.43378770151192647,
+      "eligible": true
     },
     {
       "context": "centre",
-      "n_cells": 1145,
-      "n_blocks": 58,
+      "n_cells": 9737,
+      "n_blocks": 63,
       "built_q05": 0.0,
-      "built_q099": 0.6183311413320828,
+      "built_q099": 0.609559944267901,
       "eligible": true
     }
   ],
@@ -60,42 +60,62 @@
     {
       "context": "rural",
       "eligible": true,
-      "n_cells": 7032,
-      "n_blocks": 320,
+      "n_cells": 61624,
+      "n_blocks": 331,
       "built_q01": 0.0,
-      "built_q099": 0.11443163615450203,
+      "built_q099": 0.11240170585208152,
       "median_ndvi": 0.3513968226424025,
-      "selected_lam": 0.1
+      "selected_lam": 0.1,
+      "n_cells_subsampled": 10000,
+      "n_rows_subsampled": 29989
     },
     {
       "context": "suburban",
       "eligible": true,
-      "n_cells": 1564,
-      "n_blocks": 208,
+      "n_cells": 13433,
+      "n_blocks": 230,
       "built_q01": 0.0,
-      "built_q099": 0.2675040429371697,
+      "built_q099": 0.2710501050197312,
       "median_ndvi": 0.3513968226424025,
-      "selected_lam": 1.0
+      "selected_lam": 10.0,
+      "n_cells_subsampled": 10000,
+      "n_rows_subsampled": 29983
     },
     {
       "context": "semi-dense",
-      "eligible": false,
-      "reason": "cells=107 blocks=39"
+      "eligible": true,
+      "n_cells": 832,
+      "n_blocks": 50,
+      "built_q01": 0.0,
+      "built_q099": 0.33599973614772205,
+      "median_ndvi": 0.3513968226424025,
+      "selected_lam": 10.0,
+      "n_cells_subsampled": 832,
+      "n_rows_subsampled": 2494
     },
     {
       "context": "dense",
-      "eligible": false,
-      "reason": "cells=152 blocks=45"
+      "eligible": true,
+      "n_cells": 1316,
+      "n_blocks": 66,
+      "built_q01": 0.0,
+      "built_q099": 0.43378770151192647,
+      "median_ndvi": 0.3513968226424025,
+      "selected_lam": 10.0,
+      "n_cells_subsampled": 1316,
+      "n_rows_subsampled": 3945
     },
     {
       "context": "centre",
       "eligible": true,
-      "n_cells": 1145,
-      "n_blocks": 58,
+      "n_cells": 9737,
+      "n_blocks": 63,
       "built_q01": 0.0,
-      "built_q099": 0.6183311413320828,
+      "built_q099": 0.609559944267901,
       "median_ndvi": 0.3513968226424025,
-      "selected_lam": 0.1
+      "selected_lam": 0.1,
+      "n_cells_subsampled": 9737,
+      "n_rows_subsampled": 29198
     }
   ],
   "part_b": {
@@ -144,6 +164,18 @@
         "type": "min",
         "built": 0.45880123780174026
       }
-    ]
+    ],
+    "subsample_cells": 10000,
+    "subsample_rows": 29984
+  },
+  "overlap_all": {
+    "q01": 0.0,
+    "q099": 0.11240170585208152,
+    "n_contexts": 5
+  },
+  "overlap_urban": {
+    "q01": 0.0,
+    "q099": 0.2710501050197312,
+    "n_contexts": 4
   }
 }
