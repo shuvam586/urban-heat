@@ -1,11 +1,8 @@
 # RQ2 Part C — Built-up metric comparison (H5), five-city table
 
-**Scope:** Hyderabad, Kolkata, Chennai, Delhi. Bengaluru could not be completed:
-its `09_rq2_metrics.py --city Bengaluru` run timed out during Earth Engine
-extraction (no `data/Bengaluru/metrics.parquet` written after ~30 min) and the
-run was stopped per protocol. All four completed cities passed
-`tests/check_09_rq2_metrics.py --city <City>` (OK), including the strict
-NDBI range assertion within [-1.0, 1.0].
+**Scope:** Hyderabad, Kolkata, Chennai, Delhi, Bengaluru. All five cities passed
+`tests/check_09_rq2_metrics.py --city <City>` (OK), including the strict NDBI
+range assertion within [-1.0, 1.0].
 
 **Method:** NDBI = (SR_B6 - SR_B5) / (SR_B6 + SR_B5) on Landsat 8/9 C2 L2
 March–May 2022/2023/2025, with the same QA_PIXEL cloud/water mask and
@@ -21,6 +18,15 @@ cached to `data/<city>/metrics.parquet`, joined to `panel.parquet` on
 (linear) vs `lst_rel ~ s(metric) + s(ndvi) + te(metric, ndvi) + f(year)`
 (full).
 
+**Extraction fix:** Bengaluru's initial run timed out during Earth Engine
+extraction because `compute_300_raw` issued one full 334x334 grid
+`computePixels` request per scene. The function was reworked to tile each
+request (167x167 tiles, matching `02_landsat.py`) and to initialize integer
+bands (QA_PIXEL, ST_QA) with int dtype so the bitwise QA mask works. No masks,
+bands, SR > 0 filter, or scale=300 logic were changed; the four already-cached
+cities (Hyderabad, Kolkata, Chennai, Delhi) were not re-extracted or
+overwritten.
+
 ---
 
 ## 1. Spearman correlations with `lst_rel` (joined panel, all years)
@@ -31,6 +37,7 @@ cached to `data/<city>/metrics.parquet`, joined to `panel.parquet` on
 | Kolkata | 0.3237 | **0.6543** | 0.3238 | 0.3801 |
 | Chennai | 0.1648 | **0.7863** | 0.2245 | 0.1594 |
 | Delhi | 0.1646 | **0.5827** | 0.0261 | 0.1253 |
+| Bengaluru | -0.0281 | **0.7163** | -0.0028 | -0.0891 |
 
 NDBI shows the strongest correlation with `lst_rel` in every city, far above
 GHS-BUILT-S, Dynamic World, and WorldCover.
@@ -43,11 +50,12 @@ GHS-BUILT-S, Dynamic World, and WorldCover.
 | Kolkata | 0.2981 | **0.5931** | 0.1789 | 0.2733 |
 | Chennai | 0.0539 | **0.5640** | 0.2640 | 0.3420 |
 | Delhi | -0.1670 | **0.5966** | -0.0592 | 0.1788 |
+| Bengaluru | -0.1181 | **0.5806** | 0.2437 | 0.2577 |
 
 NDBI correlates weakly with built-up fraction (|r| 0.05–0.30, negative in
-Hyderabad/Delhi) but strongly with the bare-soil proxy (r 0.56–0.60) in all
-four cities. Dynamic World and WorldCover correlate much more weakly with the
-bare-soil proxy (|r| 0.06–0.34).
+Hyderabad/Delhi/Bengaluru) but strongly with the bare-soil proxy (r 0.56–0.60)
+in all five cities. Dynamic World and WorldCover correlate much more weakly
+with the bare-soil proxy (|r| 0.06–0.34).
 
 Full correlation matrices are saved in `outputs/<city>/rq2_metrics.json`
 (`correlation_matrix` and `bare_soil_corr`).
@@ -72,10 +80,14 @@ Full correlation matrices are saved in `outputs/<city>/rq2_metrics.json`
 | Delhi | Landsat NDBI | 0.3952 | 0.4344 | +0.0392 | 5/5 |
 | Delhi | Dynamic World | 0.0385 | 0.3541 | +0.3155 | 5/5 |
 | Delhi | WorldCover | -0.0009 | 0.3341 | +0.3350 | 5/5 |
+| Bengaluru | GHS-BUILT-S | -0.0049 | 0.5528 | +0.5577 | 5/5 |
+| Bengaluru | Landsat NDBI | 0.5463 | 0.6528 | +0.1065 | 5/5 |
+| Bengaluru | Dynamic World | 0.0144 | 0.5659 | +0.5514 | 5/5 |
+| Bengaluru | WorldCover | -0.0090 | 0.5281 | +0.5371 | 5/5 |
 
 GHS-BUILT-S, Dynamic World, and WorldCover add almost no linear skill alone
-(≈ -0.001 to 0.23 R²) but reach ≈ 0.33–0.46 R² with NDVI + interaction.
-Landsat NDBI alone already reaches ≈ 0.40–0.66 R², and its full-model gain
+(≈ -0.009 to 0.23 R²) but reach ≈ 0.33–0.64 R² with NDVI + interaction.
+Landsat NDBI alone already reaches ≈ 0.40–0.79 R², and its full-model gain
 over linear is small (+0.04–0.23) because much of its signal is already
 captured linearly — consistent with NDBI responding to dry bare soil/vegetation
 rather than built-up fraction alone.
@@ -84,15 +96,13 @@ rather than built-up fraction alone.
 
 **H5 (whether NDBI conflates dry bare soil with built-up land): supported.**
 
-Across all four completed cities, NDBI correlates much more strongly with
-`lst_rel` (r = 0.35–0.79) and with the bare-soil proxy (r = 0.56–0.60) than
+Across all five cities, NDBI correlates much more strongly with `lst_rel`
+(r = -0.35 to +0.79) and with the bare-soil proxy (r = 0.56–0.60) than
 GHS-BUILT-S, Dynamic World, or WorldCover do, while correlating only weakly
 with built-up fraction itself (r = -0.17 to 0.30). NDBI therefore carries a
 substantial dry bare-soil signal and is not a clean substitute for GHS-BUILT-S.
 Dynamic World and WorldCover behave much closer to GHS-BUILT-S (weak bare-soil
 association, comparable CV skill once NDVI + interaction are added), so the
 apparent urban-heat signal from NDBI is likely inflated by bare pre-monsoon
-soil, especially in Delhi (+0.58 NDBI–lst_rel) and Chennai (+0.79).
-
-**Bengaluru:** not completed (Earth Engine extraction timeout). No results
-included; run separately once extraction succeeds.
+soil, especially in Bengaluru (+0.72 NDBI–lst_rel), Chennai (+0.79), Delhi
+(+0.58), and Kolkata (+0.65).

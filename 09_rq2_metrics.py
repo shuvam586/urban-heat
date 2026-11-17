@@ -22,6 +22,7 @@ SEED = 42
 LAM_GRID = np.logspace(-1, 3, 5)
 METRICS_FILENAME = "metrics.parquet"
 GRID_SIZE = 334
+TILE_SIZE = 167
 
 
 def block_key_from_xy(x, y):
@@ -86,26 +87,45 @@ def derivative_zero_crossings(gam, x_min, x_max, n_points=500):
 
 
 def compute_300_raw(image, bands, x_min, y_max):
-    """Extract raw bands at 300m grid using computePixels (fast)."""
-    result = ee.data.computePixels(
-        {
-            "expression": image,
-            "fileFormat": "NUMPY_NDARRAY",
-            "bandIds": bands,
-            "grid": {
-                "dimensions": {"width": GRID_SIZE, "height": GRID_SIZE},
+    """Extract raw bands at 300m grid using computePixels, tiled to keep
+    each Earth Engine request small (avoids timeouts on large grids)."""
+    size = GRID_SIZE
+    int_bands = {"QA_PIXEL", "ST_QA"}
+    result = {}
+    for band in bands:
+        if band in int_bands:
+            result[band] = np.full((size, size), -1, dtype=np.int32)
+        else:
+            result[band] = np.full((size, size), np.nan, dtype=float)
+    for row_start in range(0, size, TILE_SIZE):
+        for col_start in range(0, size, TILE_SIZE):
+            width = min(TILE_SIZE, size - col_start)
+            height = min(TILE_SIZE, size - row_start)
+            tile_grid = {
+                "dimensions": {"width": width, "height": height},
                 "affineTransform": {
                     "scaleX": 300,
                     "shearX": 0,
-                    "translateX": x_min,
+                    "translateX": x_min + col_start * 300,
                     "shearY": 0,
                     "scaleY": -300,
-                    "translateY": y_max,
+                    "translateY": y_max - row_start * 300,
                 },
                 "crsCode": config.GRID_CRS,
-            },
-        }
-    )
+            }
+            pixels = ee.data.computePixels(
+                {
+                    "expression": image,
+                    "fileFormat": "NUMPY_NDARRAY",
+                    "bandIds": bands,
+                    "grid": tile_grid,
+                }
+            )
+            for band in bands:
+                result[band][
+                    row_start : row_start + height,
+                    col_start : col_start + width,
+                ] = pixels[band]
     return {band: result[band] for band in bands}
 
 
